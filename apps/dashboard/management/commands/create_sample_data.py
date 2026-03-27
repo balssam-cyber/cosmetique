@@ -182,29 +182,37 @@ class Command(BaseCommand):
         rnd_products = {}
         forms = {}
         idx = 1
-        for p_name, p_cat, mat_name, f_ingrs in prod_data:
-            ref = f"PRD2024-00{idx}"
-            idx += 1
-            prod, _ = Product.objects.get_or_create(reference=ref, defaults={
-                'name': p_name, 'category': p_cat, 'status': 'approved',
-                'created_by': users['scientist1']
-            })
-            rnd_products[p_name] = prod
-            
-            form, _ = Formulation.objects.get_or_create(product=prod, version='1.0', defaults={
-                'status': 'approved', 'batch_size': 100.0, 'ph_min': 5.0, 'ph_max': 6.5,
-                'appearance': 'Conforme au standard',
-                'created_by': users['scientist1'], 'approved_by': users['lab_manager1']
-            })
-            forms[mat_name] = form
-            
-            # Clear old and create ingredients
-            form.ingredients.all().delete()
-            for i, (ing_n, phase, pct) in enumerate(f_ingrs):
-                FormulationIngredient.objects.create(
-                    formulation=form, ingredient=ingredients[ing_n],
-                    phase=phase, percentage=pct, function='Actif', order=i
-                )
+        
+        # Check if we already have products to skip if data exists
+        if Product.objects.count() >= len(prod_data):
+            self.stdout.write('Products already exist, skipping R&D data creation.')
+            for p_name, p_cat, mat_name, f_ingrs in prod_data:
+                rnd_products[p_name] = Product.objects.filter(name=p_name).first()
+                forms[mat_name] = Formulation.objects.filter(product=rnd_products[p_name]).first()
+        else:
+            for p_name, p_cat, mat_name, f_ingrs in prod_data:
+                ref = f"PRD2024-00{idx}"
+                idx += 1
+                prod, _ = Product.objects.get_or_create(reference=ref, defaults={
+                    'name': p_name, 'category': p_cat, 'status': 'approved',
+                    'created_by': users['scientist1']
+                })
+                rnd_products[p_name] = prod
+                
+                form, _ = Formulation.objects.get_or_create(product=prod, version='1.0', defaults={
+                    'status': 'approved', 'batch_size': 100.0, 'ph_min': 5.0, 'ph_max': 6.5,
+                    'appearance': 'Conforme au standard',
+                    'created_by': users['scientist1'], 'approved_by': users['lab_manager1']
+                })
+                forms[mat_name] = form
+                
+                # Clear old and create ingredients links (WITHOUT deleting the ingredients themselves)
+                FormulationIngredient.objects.filter(formulation=form).delete()
+                for i, (ing_n, phase, pct) in enumerate(f_ingrs):
+                    FormulationIngredient.objects.create(
+                        formulation=form, ingredient=ingredients[ing_n],
+                        phase=phase, percentage=pct, function='Actif', order=i
+                    )
 
         # --- 7. Production Batches & QC ---
         from apps.production.models import ProductionBatch, QCCheck

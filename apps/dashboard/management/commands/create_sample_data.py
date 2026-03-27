@@ -17,8 +17,8 @@ class Command(BaseCommand):
         today = now.date()
 
         # Helper to generate random past dates
-        def random_date(start_days_ago, end_days_ago):
-            days = random.randint(end_days_ago, start_days_ago) # start_days_ago > end_days_ago
+        def random_date(min_days_ago, max_days_ago):
+            days = random.randint(min_days_ago, max_days_ago)
             return today - timedelta(days=days)
 
         # --- 1. Users ---

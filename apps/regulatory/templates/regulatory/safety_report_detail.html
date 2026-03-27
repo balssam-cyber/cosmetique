@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}RSP {{ report.report_number }}{% endblock %}
+{% block page_title %}RSP {{ report.report_number }}{% endblock %}
+{% block content %}
+<div class="d-flex gap-2 mb-3">
+    <a href="{% url 'regulatory:safety_report_list' %}" class="btn btn-sm btn-outline-secondary">Retour</a>
+    <a href="{% url 'regulatory:safety_report_edit' report.pk %}" class="btn btn-sm btn-brand">Editer</a>
+</div>
+<div class="card col-lg-7"><div class="card-body">
+<table class="table table-sm table-borderless">
+    <tr><th>Produit</th><td>{{ report.product.name }}</td></tr>
+    <tr><th>Formulation</th><td>{{ report.formulation|default:"-" }}</td></tr>
+    <tr><th>Statut</th><td><span class="badge badge-status-{{ report.status }}">{{ report.get_status_display }}</span></td></tr>
+    <tr><th>Evaluateur securite</th><td>{{ report.safety_assessor }}</td></tr>
+    <tr><th>Date emission</th><td>{{ report.issue_date|date:"d/m/Y"|default:"-" }}</td></tr>
+    <tr><th>Date expiration</th><td>{{ report.expiry_date|date:"d/m/Y"|default:"-" }}</td></tr>
+</table>
+{% if report.conclusion %}<hr><h6>Conclusion</h6><p class="text-muted">{{ report.conclusion }}</p>{% endif %}
+</div></div>
+{% endblock %}

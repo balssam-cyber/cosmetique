@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}{% if equipment %}Modifier{% else %}Ajouter{% endif %} un équipement{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm max-w-lg mx-auto">
+    <div class="card-header fw-bold">{% if equipment %}Modifier l'équipement {{ equipment.name }}{% else %}Nouvel équipement{% endif %}</div>
+    <div class="card-body">
+        <form method="POST">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Nom de la machine *</label>
+                    <input type="text" name="name" class="form-control" value="{{ equipment.name|default:'' }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Numéro de série / Matricule</label>
+                    <input type="text" name="serial_number" class="form-control" value="{{ equipment.serial_number|default:'' }}">
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">Date d'achat</label>
+                    <input type="date" name="purchase_date" class="form-control" value="{{ equipment.purchase_date|date:'Y-m-d'|default:'' }}">
+                </div>
+
+                <div class="col-md-6 d-flex align-items-center mt-4">
+                    <div class="form-check form-switch ps-5">
+                        <input class="form-check-input" type="checkbox" name="is_active" id="isActive" {% if not equipment or equipment.is_active %}checked{% endif %}>
+                        <label class="form-check-label ms-2" for="isActive">En service actif</label>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Description / Fiche technique</label>
+                    <textarea name="description" class="form-control" rows="3">{{ equipment.description|default:'' }}</textarea>
+                </div>
+
+                <div class="col-12 d-flex gap-2 pt-3 border-top mt-4">
+                    <button type="submit" class="btn btn-brand">Enregistrer</button>
+                    <a href="{% if equipment %}{% url 'production:equipment_detail' equipment.pk %}{% else %}{% url 'production:equipment_list' %}{% endif %}" class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

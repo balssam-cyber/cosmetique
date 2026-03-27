@@ -1,0 +1,21 @@
+venv/
+venv*/
+env/
+ENV/
+.env
+.idea/
+.vscode/
+
+# SQLite
+*.sqlite3
+db.sqlite3
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Static files collected
+staticfiles/
+static_root/
+media/

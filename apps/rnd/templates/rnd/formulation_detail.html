@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}{{ formulation }} — Formulation{% endblock %}
+{% block page_title %}{{ formulation }}{% endblock %}
+
+{% block content %}
+<div class="d-flex gap-2 mb-3 flex-wrap">
+    <a href="{% url 'rnd:product_detail' formulation.product.pk %}" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Retour au produit
+    </a>
+    <a href="{% url 'rnd:formulation_simulate' formulation.pk %}" class="btn btn-sm btn-brand shadow-sm">
+        <i class="fas fa-flask text-white me-1"></i>Simuler & Calculer les coûts
+    </a>
+    {% if can_edit %}
+    <a href="{% url 'rnd:formulation_edit' formulation.pk %}" class="btn btn-sm btn-brand">
+        <i class="fas fa-edit me-1"></i>Éditer
+    </a>
+    <a href="{% url 'rnd:fi_add' formulation.pk %}" class="btn btn-sm btn-outline-success">
+        <i class="fas fa-plus me-1"></i>Ajouter ingrédient
+    </a>
+    <a href="{% url 'rnd:stability_add' formulation.pk %}" class="btn btn-sm btn-outline-info">
+        <i class="fas fa-microscope me-1"></i>Ajouter test stabilité
+    </a>
+    {% endif %}
+    {% if formulation.status == 'approved' %}
+    <a href="{% url 'production:batch_add' %}?formulation={{ formulation.pk }}" class="btn btn-sm btn-success">
+        <i class="fas fa-industry me-1"></i>Lancer en production
+    </a>
+    {% endif %}
+</div>
+
+<div class="row g-3">
+    <!-- Info card -->
+    <div class="col-12 col-lg-3">
+        <div class="card mb-3">
+            <div class="card-header fw-bold"><i class="fas fa-flask me-2 text-primary"></i>Informations</div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr><th>Produit</th><td><a href="{% url 'rnd:product_detail' formulation.product.pk %}">{{ formulation.product.name }}</a></td></tr>
+                    <tr><th>Version</th><td class="fw-bold">v{{ formulation.version }}</td></tr>
+                    <tr><th>Statut</th><td><span class="badge badge-status-{{ formulation.status }}">{{ formulation.get_status_display }}</span></td></tr>
+                    <tr><th>Taille lot</th><td class="fw-semibold">{{ formulation.batch_size }} kg</td></tr>
+                    <tr><th>pH</th><td>{{ formulation.ph_min|default:"?" }} – {{ formulation.ph_max|default:"?" }}</td></tr>
+                    {% if formulation.viscosity %}<tr><th>Viscosité</th><td>{{ formulation.viscosity }}</td></tr>{% endif %}
+                    {% if formulation.appearance %}<tr><th>Aspect</th><td>{{ formulation.appearance }}</td></tr>{% endif %}
+                </table>
+                {% if formulation.notes %}
+                <hr class="my-2">
+                <p class="small text-muted mb-0">{{ formulation.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Total % card -->
+        <div class="card {% if total_pct == 100 %}border-success{% elif total_pct > 100 %}border-danger{% else %}border-warning{% endif %}">
+            <div class="card-body text-center py-3">
+                <div class="fs-2 fw-bold {% if total_pct == 100 %}text-success{% elif total_pct > 100 %}text-danger{% else %}text-warning{% endif %}">
+                    {{ total_pct|floatformat:2 }}%
+                </div>
+                <div class="text-muted small">Total formulation</div>
+                {% if total_pct == 100 %}
+                    <span class="badge bg-success mt-1">✓ 100% — Parfait</span>
+                {% elif total_pct > 100 %}
+                    <span class="badge bg-danger mt-1">⚠ Dépasse 100%</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark mt-1">Manque {{ total_pct|floatformat:2 }}% → 100%</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Ingredients table -->
+    <div class="col-12 col-lg-9">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-list me-2 text-secondary"></i>Ingrédients de la formulation</span>
+                {% if can_edit %}
+                <a href="{% url 'rnd:fi_add' formulation.pk %}" class="btn btn-sm btn-outline-success py-0 px-2">
+                    <i class="fas fa-plus me-1"></i>Ajouter
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Phase</th>
+                            <th>Ingrédient</th>
+                            <th>Nom INCI</th>
+                            <th class="text-end">%</th>
+                            <th class="text-end">Qté / {{ formulation.batch_size }} kg</th>
+                            <th>Fonction</th>
+                            {% if can_edit %}<th>Actions</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for fi in ingredients %}
+                    <tr>
+                        <td><span class="badge bg-secondary">{{ fi.phase }}</span></td>
+                        <td>
+                            <a href="{% url 'rnd:ingredient_detail' fi.ingredient.pk %}" class="text-decoration-none fw-semibold">
+                                {{ fi.ingredient.name }}
+                            </a>
+                            {% if fi.ingredient.is_restricted %}
+                            <span class="badge bg-danger ms-1 small">Restreint</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">{{ fi.ingredient.inci_name|default:"—" }}</td>
+                        <td class="text-end fw-bold">{{ fi.percentage }}%</td>
+                        <td class="text-end text-primary fw-semibold">
+                            <!-- Calcul automatique: (pourcentage / 100) × taille_lot -->
+                            {{ fi.qty_kg|floatformat:4 }} kg
+                        </td>
+                        <td class="text-muted small">{{ fi.function|default:"—" }}</td>
+                        {% if can_edit %}
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{% url 'rnd:fi_edit' fi.pk %}" class="btn btn-xs btn-sm btn-outline-primary py-0 px-2" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'rnd:fi_delete' fi.pk %}" class="btn btn-xs btn-sm btn-outline-danger py-0 px-2"
+                                   onclick="return confirm('Supprimer cet ingrédient ?')" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-flask fa-2x mb-2 d-block opacity-25"></i>
+                            Aucun ingrédient.
+                            {% if can_edit %}
+                            <a href="{% url 'rnd:fi_add' formulation.pk %}" class="d-block mt-2">Ajouter le premier ingrédient</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                    {% if ingredients %}
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="3" class="fw-bold text-end">TOTAL</td>
+                            <td class="text-end fw-bold {% if total_pct == 100 %}text-success{% elif total_pct > 100 %}text-danger{% else %}text-warning{% endif %}">
+                                {{ total_pct|floatformat:2 }}%
+                            </td>
+                            <td class="text-end fw-bold text-primary">{{ formulation.batch_size }} kg</td>
+                            <td colspan="{% if can_edit %}2{% else %}1{% endif %}"></td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+
+        <!-- Stability tests -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-microscope me-2 text-secondary"></i>Tests de stabilité</span>
+                {% if can_edit %}
+                <a href="{% url 'rnd:stability_add' formulation.pk %}" class="btn btn-sm btn-outline-info py-0 px-2">
+                    <i class="fas fa-plus me-1"></i>Ajouter
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr><th>Condition</th><th>Durée</th><th>Début</th><th>Fin</th><th>pH initial</th><th>pH final</th><th>Résultat</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for test in stability_tests %}
+                    <tr>
+                        <td>{{ test.get_condition_display }}</td>
+                        <td>{{ test.duration_weeks }} sem.</td>
+                        <td class="text-muted small">{{ test.start_date|date:"d/m/Y" }}</td>
+                        <td class="text-muted small">{{ test.end_date|date:"d/m/Y"|default:"—" }}</td>
+                        <td>{{ test.ph_initial|default:"—" }}</td>
+                        <td>{{ test.ph_final|default:"—" }}</td>
+                        <td><span class="badge badge-{{ test.result }}">{{ test.get_result_display }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted py-3">Aucun test de stabilité.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

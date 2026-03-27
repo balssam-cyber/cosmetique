@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}{{ customer.name }}{% endblock %}
+{% block page_title %}{{ customer.name }}{% endblock %}
+{% block content %}
+<div class="d-flex gap-2 mb-3">
+    <a href="{% url 'sales:customer_list' %}" class="btn btn-sm btn-outline-secondary">Retour</a>
+    <a href="{% url 'sales:customer_edit' customer.pk %}" class="btn btn-sm btn-brand">Editer</a>
+    <a href="{% url 'sales:order_add' %}" class="btn btn-sm btn-outline-primary">Nouvelle commande</a>
+</div>
+<div class="row g-3">
+    <div class="col-12 col-lg-4">
+        <div class="card"><div class="card-header">Informations</div>
+        <div class="card-body"><table class="table table-sm table-borderless">
+            <tr><th>Code</th><td>{{ customer.code }}</td></tr>
+            <tr><th>Contact</th><td>{{ customer.contact_name|default:"-" }}</td></tr>
+            <tr><th>Email</th><td>{{ customer.email|default:"-" }}</td></tr>
+            <tr><th>Pays</th><td>{{ customer.country|default:"-" }}</td></tr>
+        </table></div></div>
+    </div>
+    <div class="col-12 col-lg-8">
+        <div class="card"><div class="card-header">Commandes recentes</div>
+        <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>N</th><th>Date</th><th>Statut</th><th>Montant</th></tr></thead>
+            <tbody>
+            {% for o in orders %}
+            <tr>
+                <td><a href="{% url 'sales:order_detail' o.pk %}">CV-{{ o.order_number }}</a></td>
+                <td class="text-muted small">{{ o.order_date|date:"d/m/Y" }}</td>
+                <td><span class="badge badge-status-{{ o.status }}">{{ o.get_status_display }}</span></td>
+                <td>{{ o.total_amount|floatformat:2 }} EUR</td>
+            </tr>
+            {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">Aucune commande.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+        </div></div>
+    </div>
+</div>
+{% endblock %}

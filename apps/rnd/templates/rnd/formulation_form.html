@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{% if formulation %}Éditer{% else %}Nouvelle{% endif %} Formulation{% endblock %}
+{% block page_title %}{% if formulation %}Éditer formulation{% else %}Nouvelle formulation - {{ product.name }}{% endif %}{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-12 col-lg-7">
+<div class="card"><div class="card-body">
+<form method="post">{% csrf_token %}
+<div class="row g-3">
+    <div class="col-md-4"><label class="form-label">Version *</label><input type="text" name="version" class="form-control" value="{{ formulation.version|default:'' }}" placeholder="1.0" required></div>
+    <div class="col-md-4"><label class="form-label">Statut</label>
+        <select name="status" class="form-select">{% for val, label in status_choices %}<option value="{{ val }}" {% if formulation.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    </div>
+    <div class="col-md-4"><label class="form-label">Taille lot (kg) *</label><input type="number" name="batch_size" class="form-control" step="0.01" value="{{ formulation.batch_size|default:'' }}" required></div>
+    <div class="col-md-3"><label class="form-label">pH min</label><input type="number" name="ph_min" class="form-control" step="0.01" value="{{ formulation.ph_min|default:'' }}"></div>
+    <div class="col-md-3"><label class="form-label">pH max</label><input type="number" name="ph_max" class="form-control" step="0.01" value="{{ formulation.ph_max|default:'' }}"></div>
+    <div class="col-12"><label class="form-label">Notes</label><textarea name="notes" class="form-control" rows="3">{{ formulation.notes|default:'' }}</textarea></div>
+    <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-brand">Enregistrer</button>
+        <a href="{% if product %}{% url 'rnd:product_detail' product.pk %}{% else %}{% url 'rnd:product_list' %}{% endif %}" class="btn btn-outline-secondary">Annuler</a>
+    </div>
+</div>
+</form></div></div>
+</div></div>
+{% endblock %}

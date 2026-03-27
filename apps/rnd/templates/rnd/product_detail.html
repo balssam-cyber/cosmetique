@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}{{ product.name }}{% endblock %}
+{% block page_title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex gap-2 mb-3">
+    <a href="{% url 'rnd:product_list' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Retour</a>
+    {% if can_edit %}
+    <a href="{% url 'rnd:product_edit' product.pk %}" class="btn btn-sm btn-brand"><i class="fas fa-edit me-1"></i>Éditer</a>
+    <a href="{% url 'rnd:formulation_add' product.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-plus me-1"></i>Nouvelle formulation</a>
+    {% endif %}
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-4">
+        <div class="card">
+            <div class="card-header">Informations produit</div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr><th>Référence</th><td>{{ product.reference }}</td></tr>
+                    <tr><th>Catégorie</th><td>{{ product.get_category_display }}</td></tr>
+                    <tr><th>Statut</th><td><span class="badge badge-status-{{ product.status }}">{{ product.get_status_display }}</span></td></tr>
+                    <tr><th>Créé par</th><td>{{ product.created_by|default:"-" }}</td></tr>
+                    <tr><th>Créé le</th><td>{{ product.created_at|date:"d/m/Y" }}</td></tr>
+                </table>
+                {% if product.description %}
+                <hr>
+                <p class="small text-muted">{{ product.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% if compliance %}
+        <div class="card mt-3">
+            <div class="card-header"><i class="fas fa-shield-alt me-2 text-success"></i>Conformité</div>
+            <div class="card-body">
+                <span class="badge badge-status-{{ compliance.status }}">{{ compliance.get_status_display }}</span>
+                {% if compliance.eu_regulation %}<span class="badge bg-info ms-1">Rég. UE 1223/2009</span>{% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-12 col-lg-8">
+        <div class="card">
+            <div class="card-header">Formulations</div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Version</th><th>Statut</th><th>Taille lot</th><th>Tests stabilité</th><th></th></tr></thead>
+                    <tbody>
+                    {% for formulation in formulations %}
+                    <tr>
+                        <td><a href="{% url 'rnd:formulation_detail' formulation.pk %}" class="text-decoration-none fw-semibold">v{{ formulation.version }}</a></td>
+                        <td><span class="badge badge-status-{{ formulation.status }}">{{ formulation.get_status_display }}</span></td>
+                        <td>{{ formulation.batch_size }} kg</td>
+                        <td class="text-muted">{{ formulation.stability_tests.count }}</td>
+                        <td>
+                            {% if can_edit %}
+                            <a href="{% url 'rnd:formulation_edit' formulation.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2">Éditer</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted py-3">Aucune formulation.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

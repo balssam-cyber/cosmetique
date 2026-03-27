@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}{{ doc.country }} — {{ doc.get_doc_type_display }}{% endblock %}
+{% block page_title %}Document Réglementaire{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1" style="color:#c9a84c;">
+            <i class="fas fa-file-alt me-2"></i>{{ doc.get_doc_type_display }}
+        </h4>
+        <p class="text-muted mb-0">{{ doc.product.name }} · {{ doc.country }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'regulatory:doc_edit' doc.pk %}" class="btn btn-outline-secondary">
+            <i class="fas fa-edit me-1"></i> Modifier
+        </a>
+        <a href="{% url 'regulatory:doc_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Retour
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header"><i class="fas fa-info-circle me-2"></i>Informations</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Produit</dt>
+                    <dd class="col-sm-8"><a href="{% url 'rnd:product_detail' doc.product.pk %}">{{ doc.product.name }}</a></dd>
+
+                    <dt class="col-sm-4">Pays / Marché</dt>
+                    <dd class="col-sm-8"><span class="badge bg-info">{{ doc.country }}</span></dd>
+
+                    <dt class="col-sm-4">Autorité</dt>
+                    <dd class="col-sm-8">{{ doc.authority|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Type de document</dt>
+                    <dd class="col-sm-8">{{ doc.get_doc_type_display }}</dd>
+
+                    <dt class="col-sm-4">Référence / N°</dt>
+                    <dd class="col-sm-8"><code>{{ doc.reference|default:"—" }}</code></dd>
+
+                    <dt class="col-sm-4">Statut</dt>
+                    <dd class="col-sm-8">
+                        {% if doc.status == 'valid' %}<span class="badge bg-success">Valide</span>
+                        {% elif doc.status == 'expired' %}<span class="badge bg-danger">Expiré</span>
+                        {% elif doc.status == 'rejected' %}<span class="badge bg-danger">Rejeté</span>
+                        {% else %}<span class="badge bg-warning">En attente</span>{% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Date d'émission</dt>
+                    <dd class="col-sm-8">{{ doc.issue_date|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Date d'expiration</dt>
+                    <dd class="col-sm-8">
+                        {% if doc.expiry_date %}
+                            {% if doc.is_expired %}
+                                <span class="text-danger"><i class="fas fa-times-circle me-1"></i>{{ doc.expiry_date }} (Expiré)</span>
+                            {% elif doc.is_expiring_soon %}
+                                <span class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>{{ doc.expiry_date }} (Expire bientôt)</span>
+                            {% else %}
+                                {{ doc.expiry_date }}
+                            {% endif %}
+                        {% else %}—{% endif %}
+                    </dd>
+
+                    {% if doc.notes %}
+                    <dt class="col-sm-4">Notes</dt>
+                    <dd class="col-sm-8">{{ doc.notes }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><i class="fas fa-paperclip me-2"></i>Document joint</div>
+            <div class="card-body text-center">
+                {% if doc.document_file %}
+                    <i class="fas fa-file-pdf fa-3x mb-3" style="color:#c9a84c;"></i>
+                    <p class="mb-2">Fichier disponible</p>
+                    <a href="{{ doc.document_file.url }}" target="_blank" class="btn btn-primary">
+                        <i class="fas fa-download me-1"></i> Télécharger
+                    </a>
+                {% else %}
+                    <i class="fas fa-file-times fa-3x mb-3" style="opacity:0.3;"></i>
+                    <p class="text-muted mb-0">Aucun fichier joint</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header"><i class="fas fa-history me-2"></i>Métadonnées</div>
+            <div class="card-body">
+                <small class="text-muted d-block">Créé le {{ doc.created_at|date:"d/m/Y H:i" }}</small>
+                <small class="text-muted d-block">Modifié le {{ doc.updated_at|date:"d/m/Y H:i" }}</small>
+                {% if doc.created_by %}
+                <small class="text-muted d-block">Par {{ doc.created_by.get_full_name|default:doc.created_by.username }}</small>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-body">
+                <form method="post" action="{% url 'regulatory:doc_delete' doc.pk %}"
+                      onsubmit="return confirm('Supprimer ce document ?')">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger w-100">
+                        <i class="fas fa-trash me-1"></i> Supprimer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Facture N° {{ order.invoice_number|default:order.order_number }}</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; color: #333; margin: 0; padding: 20px; }
+        .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); background-color: #fff; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 2px solid #c9a84c; padding-bottom: 20px; }
+        .logo-area h1 { margin: 0; color: #0d1b3e; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; }
+        .logo-area span { color: #c9a84c; font-weight: bold; }
+        .company-details { font-size: 12px; color: #666; margin-top: 10px; }
+        .invoice-details { text-align: right; }
+        .invoice-details h2 { margin: 0 0 10px 0; color: #c9a84c; font-size: 24px; text-transform: uppercase; }
+        .client-section { margin-bottom: 30px; display: flex; justify-content: space-between; }
+        .client-details h4 { margin: 0 0 5px 0; color: #0d1b3e; }
+        .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .table th { background-color: #f7f9fc; color: #0d1b3e; font-weight: bold; border-bottom: 2px solid #ddd; padding: 12px; text-align: left; }
+        .table td { padding: 12px; border-bottom: 1px solid #eee; }
+        .table th.text-right, .table td.text-right { text-align: right; }
+        .totals { float: right; width: 350px; }
+        .totals-table { width: 100%; border-collapse: collapse; }
+        .totals-table td { padding: 8px; }
+        .totals-table .total-row td { font-weight: bold; font-size: 18px; color: #c9a84c; border-top: 2px solid #eee; }
+        .footer { clear: both; margin-top: 50px; text-align: center; color: #888; font-size: 11px; padding-top: 20px; border-top: 1px solid #eee; }
+        
+        @media print {
+            body { background: white; padding: 0; }
+            .invoice-box { box-shadow: none; border: none; max-width: 100%; padding: 0; }
+            .no-print { display: none; }
+        }
+        .print-btn { background: #0d1b3e; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; display: block; margin: 0 auto 20px auto; }
+        .print-btn:hover { background: #c9a84c; color: #0d1b3e; }
+    </style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()"><i class="fas fa-print"></i> Imprimer cette Facture</button>
+
+<div class="invoice-box">
+    <div class="header">
+        <div class="logo-area">
+            <h1>Cosmo<span>ERP</span></h1>
+            <div class="company-details">
+                Les Laboratoires Velune<br>
+                Zone Industrielle Mghira, Ben Arous<br>
+                MF: 1234567/X/A/M/000<br>
+                Contact: contact@velune-cosmetics.com
+            </div>
+        </div>
+        <div class="invoice-details">
+            <h2>FACTURE</h2>
+            <strong>N°:</strong> {{ order.invoice_number|default:order.order_number }}<br>
+            <strong>Date:</strong> {% now "d/m/Y" %}<br>
+            <strong>Statut:</strong> {{ order.get_payment_status_display|upper }}
+        </div>
+    </div>
+
+    <div class="client-section">
+        <div class="client-details">
+            <h4>Facturé à :</h4>
+            <strong>{{ order.customer.name }}</strong> ({{ order.customer.code }})<br>
+            {% if order.customer.contact_name %}{{ order.customer.contact_name }}<br>{% endif %}
+            {{ order.customer.address|default:"Adresse non définie" }}<br>
+            {{ order.customer.country|default:"-" }}<br>
+            {{ order.customer.phone }}
+        </div>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Désignation Produit Fini</th>
+                <th class="text-right">Quantité</th>
+                <th class="text-right">Prix Unitaire (HT)</th>
+                <th class="text-right">Total (HT)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in order.lines.all %}
+            <tr>
+                <td>{{ line.material.name }}<br><small style="color: #888;">Code: {{ line.material.code }}</small></td>
+                <td class="text-right">{{ line.quantity|floatformat:0 }}</td>
+                <td class="text-right">{{ line.unit_price|floatformat:3 }} DT</td>
+                <td class="text-right">{{ line.total_price|floatformat:3 }} DT</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <table class="totals-table">
+            <tr>
+                <td>Total Brut HT :</td>
+                <td class="text-right">{{ order.gross_amount|floatformat:3 }} DT</td>
+            </tr>
+            {% if order.discount > 0 %}
+            <tr>
+                <td>Remise ({{ order.discount|floatformat:2 }}%) :</td>
+                <td class="text-right" style="color: red;">-{{ order.gross_amount|add:"-"|add:order.total_amount|floatformat:3 }} DT</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td><strong>Total Net HT :</strong></td>
+                <td class="text-right"><strong>{{ order.total_amount|floatformat:3 }} DT</strong></td>
+            </tr>
+            <tr>
+                <td>TVA ({{ order.tva_rate|floatformat:0 }}%) :</td>
+                <td class="text-right">{{ order.total_tva|floatformat:3 }} DT</td>
+            </tr>
+            <tr class="total-row">
+                <td>TOTAL TTC :</td>
+                <td class="text-right">{{ order.total_ttc|floatformat:3 }} DT</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        Arrêtée la présente facture à la somme de : <strong>___________________________________</strong><br><br>
+        En cas de retard de paiement, des pénalités pourront être appliquées selon la réglementation en vigueur.<br>
+        Merci pour votre confiance.
+    </div>
+</div>
+
+</body>
+</html>

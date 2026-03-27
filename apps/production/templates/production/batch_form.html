@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block title %}{% if batch %}Éditer lot{% else %}Nouveau lot production{% endif %}{% endblock %}
+{% block page_title %}{% if batch %}Éditer — {{ batch.batch_number }}{% else %}Nouveau lot de production{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Informations du lot</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">N° Lot *</label>
+                            <input type="text" name="batch_number" class="form-control" value="{{ batch.batch_number|default:'' }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Formulation *</label>
+                            <select name="formulation" id="formulation-select" class="form-select" required>
+                                <option value="">— Sélectionner —</option>
+                                {% for f in formulations %}
+                                <option value="{{ f.id }}" {% if batch.formulation_id == f.id %}selected{% endif %}>
+                                    {{ f.product.name }} — v{{ f.version }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Quantité à produire (kg) *</label>
+                            <input type="number" name="quantity_kg" id="quantity-input" class="form-control" value="{{ batch.quantity_kg|default:'' }}" step="0.01" required>
+                            <div class="form-text">Entrez la quantité pour calculer les matières nécessaires.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Date production *</label>
+                            <input type="date" name="production_date" class="form-control" value="{{ batch.production_date|default:'' }}" required>
+                        </div>
+
+                        {% if batch %}
+                        <div class="mb-3">
+                            <label class="form-label">Statut</label>
+                            <select name="status" class="form-select">
+                                {% for val, label in status_choices %}
+                                <option value="{{ val }}" {% if batch.status == val %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea name="notes" class="form-control" rows="3">{{ batch.notes|default:'' }}</textarea>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                {% if batch %}Sauvegarder{% else %}Créer le lot{% endif %}
+                            </button>
+                            <a href="{% url 'production:batch_list' %}" class="btn btn-secondary">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Calcul automatique des matières</h5>
+                    <span class="badge bg-secondary" id="qty-badge">Saisir quantité</span>
+                </div>
+                <div class="card-body">
+                    <div id="materials-placeholder" class="text-muted text-center py-4">
+                        <i class="bi bi-calculator fs-2"></i>
+                        <p>Sélectionnez une formulation et entrez la quantité<br>pour voir les matières nécessaires.</p>
+                    </div>
+
+                    <div id="materials-table-wrapper" style="display:none;">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Ingrédient</th>
+                                    <th>%</th>
+                                    <th>Requis</th>
+                                    <th>Stock dispo</th>
+                                    <th>OK?</th>
+                                </tr>
+                            </thead>
+                            <tbody id="materials-tbody"></tbody>
+                            <tfoot>
+                                <tr class="fw-bold">
+                                    <td>TOTAL</td>
+                                    <td>—</td>
+                                    <td id="total-required"></td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                        <div id="stock-warning" class="alert alert-warning d-none">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Attention : stock insuffisant pour certaines matières.
+                        </div>
+
+                        <div id="unlinked-warning" class="alert alert-info d-none">
+                            <i class="bi bi-link-45deg"></i>
+                            Certains ingrédients ne sont pas liés à une matière stock.
+                            <a href="{% url 'production:batch_list' %}" class="alert-link">Lier dans Stock</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}

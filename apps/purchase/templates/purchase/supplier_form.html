@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Fournisseur{% endblock %}
+{% block page_title %}{% if supplier %}Editer {{ supplier.name }}{% else %}Nouveau fournisseur{% endif %}{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-12 col-lg-7">
+<div class="card"><div class="card-body">
+<form method="post">{% csrf_token %}
+<div class="row g-3">
+    <div class="col-md-4"><label class="form-label">Code *</label><input type="text" name="code" class="form-control" value="{{ supplier.code|default:'' }}" required></div>
+    <div class="col-md-8"><label class="form-label">Nom *</label><input type="text" name="name" class="form-control" value="{{ supplier.name|default:'' }}" required></div>
+    <div class="col-md-6"><label class="form-label">Contact</label><input type="text" name="contact_name" class="form-control" value="{{ supplier.contact_name|default:'' }}"></div>
+    <div class="col-md-6"><label class="form-label">Email</label><input type="email" name="email" class="form-control" value="{{ supplier.email|default:'' }}"></div>
+    <div class="col-md-4"><label class="form-label">Telephone</label><input type="text" name="phone" class="form-control" value="{{ supplier.phone|default:'' }}"></div>
+    <div class="col-md-8"><label class="form-label">Pays</label><input type="text" name="country" class="form-control" value="{{ supplier.country|default:'' }}"></div>
+    <div class="col-12"><label class="form-label">Adresse</label><textarea name="address" class="form-control" rows="2">{{ supplier.address|default:'' }}</textarea></div>
+    <div class="col-12 d-flex gap-2"><button type="submit" class="btn btn-brand">Enregistrer</button><a href="{% url 'purchase:supplier_list' %}" class="btn btn-outline-secondary">Annuler</a></div>
+</div>
+</form></div></div>
+</div></div>
+{% endblock %}

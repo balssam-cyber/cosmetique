@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}Ajouter un lot{% endblock %}
+{% block page_title %}Ajouter un lot au stock{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-12 col-lg-7">
+<div class="card">
+    <div class="card-header fw-bold">
+        <i class="fas fa-plus-circle me-2 text-success"></i>Réception / Entrée en stock
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info py-2 mb-3">
+            <i class="fas fa-info-circle me-2"></i>
+            Utilisez ce formulaire pour enregistrer une entrée directe en stock (sans bon de commande).
+            Pour les réceptions liées à un achat, utilisez le module <a href="{% url 'purchase:order_list' %}">Achats</a>.
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Matière / Produit *</label>
+                    <select name="material" class="form-select" required id="materialSelect">
+                        <option value="">— Sélectionner —</option>
+                        {% for m in materials %}
+                        <option value="{{ m.pk }}"
+                            {% if request.GET.material == m.pk|stringformat:"s" %}selected{% endif %}
+                            data-unit="{{ m.unit }}">
+                            {{ m.code }} — {{ m.name }} ({{ m.unit }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Numéro de lot *</label>
+                    <input type="text" name="lot_number" class="form-control"
+                           placeholder="Ex: LOT-2024-001" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Fournisseur</label>
+                    <input type="text" name="supplier" class="form-control" placeholder="Nom du fournisseur">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Quantité reçue *</label>
+                    <div class="input-group">
+                        <input type="number" name="quantity" class="form-control"
+                               step="0.001" min="0.001" required placeholder="0">
+                        <span class="input-group-text" id="unitLabel">unité</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Date de réception *</label>
+                    <input type="date" name="reception_date" class="form-control"
+                           value="{% now 'Y-m-d' %}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Date d'expiration</label>
+                    <input type="date" name="expiry_date" class="form-control">
+                    <div class="form-text">Laisser vide si pas d'expiration</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Coût unitaire (€)</label>
+                    <input type="number" name="unit_cost" class="form-control"
+                           step="0.0001" min="0" placeholder="0.00">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Emplacement</label>
+                    <input type="text" name="location" class="form-control" placeholder="Ex: Étagère A3">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Référence document</label>
+                    <input type="text" name="reference" class="form-control" placeholder="N° BL / facture">
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Notes</label>
+                    <textarea name="notes" class="form-control" rows="2" placeholder="Observations..."></textarea>
+                </div>
+                <div class="col-12 d-flex gap-2 pt-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-1"></i>Enregistrer l'entrée en stock
+                    </button>
+                    <a href="{% url 'stock:material_list' %}" class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('materialSelect').addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex];
+    const unit = selected.dataset.unit || 'unité';
+    document.getElementById('unitLabel').textContent = unit;
+});
+// Set unit on page load if material pre-selected
+window.addEventListener('load', function() {
+    const sel = document.getElementById('materialSelect');
+    if (sel.value) {
+        const unit = sel.options[sel.selectedIndex].dataset.unit || 'unité';
+        document.getElementById('unitLabel').textContent = unit;
+    }
+});
+</script>
+{% endblock %}

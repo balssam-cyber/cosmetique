@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% block title %}{% if ingredient %}Éditer{% else %}Nouveau{% endif %} Ingrédient{% endblock %}
+{% block page_title %}{% if ingredient %}Éditer ingrédient{% else %}Nouvel ingrédient{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-12 col-lg-9">
+<div class="card">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+
+        <!-- ── Informations générales ── -->
+        <div class="col-12"><h6 class="fw-bold text-muted border-bottom pb-2">Informations générales</h6></div>
+
+        <div class="col-md-6">
+          <label class="form-label">Nom *</label>
+          <input type="text" name="name" class="form-control" value="{{ ingredient.name|default:'' }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Nom INCI</label>
+          <input type="text" name="inci_name" class="form-control" value="{{ ingredient.inci_name|default:'' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Numéro CAS</label>
+          <input type="text" name="cas_number" class="form-control" value="{{ ingredient.cas_number|default:'' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Catégorie</label>
+          <select name="category" class="form-select">
+            {% for val, label in category_choices %}
+            <option value="{{ val }}" {% if ingredient.category == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Certification</label>
+          <input type="text" name="certification" class="form-control"
+                 value="{{ ingredient.certification|default:'' }}" placeholder="Ex: Cosmos, Bio...">
+        </div>
+
+        <!-- ── Origine ── -->
+        <div class="col-md-4">
+          <label class="form-label">Origine</label>
+          <select name="origin_select" id="origin-select" class="form-select">
+            <option value="">— Sélectionner —</option>
+            <option value="Végétale" {% if ingredient.origin == 'Végétale' %}selected{% endif %}>Végétale</option>
+            <option value="Synthétique" {% if ingredient.origin == 'Synthétique' %}selected{% endif %}>Synthétique</option>
+            <option value="Minérale" {% if ingredient.origin == 'Minérale' %}selected{% endif %}>Minérale</option>
+            <option value="Animale" {% if ingredient.origin == 'Animale' %}selected{% endif %}>Animale</option>
+            <option value="Biotechnologique" {% if ingredient.origin == 'Biotechnologique' %}selected{% endif %}>Biotechnologique</option>
+            <option value="autre" {% if ingredient.origin and ingredient.origin not in 'Végétale,Synthétique,Minérale,Animale,Biotechnologique' %}selected{% endif %}>Autre...</option>
+          </select>
+          <input type="text" name="origin" id="origin-custom" class="form-control mt-2"
+                 placeholder="Précisez l'origine..."
+                 value="{{ ingredient.origin|default:'' }}"
+                 style="display:none">
+        </div>
+
+        <!-- ── Aspect ── -->
+        <div class="col-md-4">
+          <label class="form-label">Aspect</label>
+          <input type="text" name="aspect" class="form-control"
+                 value="{{ ingredient.aspect|default:'' }}" placeholder="Ex: Poudre blanche, Liquide...">
+        </div>
+
+        <!-- ── Restreint ── -->
+        <div class="col-md-4 d-flex align-items-end">
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" name="is_restricted"
+                   {% if ingredient.is_restricted %}checked{% endif %}>
+            <label class="form-check-label">Restreint</label>
+          </div>
+        </div>
+
+        <!-- ── Description ── -->
+        <div class="col-12"><h6 class="fw-bold text-muted border-bottom pb-2 mt-2">Description & Applications</h6></div>
+
+        <div class="col-12">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control" rows="3">{{ ingredient.description|default:'' }}</textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Applications</label>
+          <textarea name="applications" class="form-control" rows="3"
+                    placeholder="Ex: Crèmes hydratantes, Shampooings...">{{ ingredient.applications|default:'' }}</textarea>
+        </div>
+
+        <!-- ── Dosage ── -->
+        <div class="col-12"><h6 class="fw-bold text-muted border-bottom pb-2 mt-2">Dosage & Utilisation</h6></div>
+
+        <div class="col-md-3">
+          <label class="form-label">Dosage min (%)</label>
+          <input type="number" name="dosage_min" class="form-control" step="0.0001"
+                 value="{{ ingredient.dosage_min|default:'' }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Dosage max (%)</label>
+          <input type="number" name="dosage_max" class="form-control" step="0.0001"
+                 value="{{ ingredient.dosage_max|default:'' }}">
+        </div>
+
+        <!-- ── Phase d'ajout ── -->
+        <div class="col-md-3">
+          <label class="form-label">Phase d'ajout</label>
+          <select name="addition_phase_select" id="phase-select" class="form-select">
+            <option value="">— Sélectionner —</option>
+            <option value="Phase huileuse" {% if ingredient.addition_phase == 'Phase huileuse' %}selected{% endif %}>Phase huileuse</option>
+            <option value="Phase aqueuse" {% if ingredient.addition_phase == 'Phase aqueuse' %}selected{% endif %}>Phase aqueuse</option>
+            <option value="En fin de formulation" {% if ingredient.addition_phase == 'En fin de formulation' %}selected{% endif %}>En fin de formulation</option>
+            <option value="Phase froide" {% if ingredient.addition_phase == 'Phase froide' %}selected{% endif %}>Phase froide</option>
+            <option value="autre" {% if ingredient.addition_phase and ingredient.addition_phase not in 'Phase huileuse,Phase aqueuse,En fin de formulation,Phase froide' %}selected{% endif %}>Autre...</option>
+          </select>
+          <input type="text" name="addition_phase" id="phase-custom" class="form-control mt-2"
+                 placeholder="Précisez..."
+                 value="{{ ingredient.addition_phase|default:'' }}"
+                 style="display:none">
+        </div>
+
+        <!-- ── Solubilité ── -->
+        <div class="col-md-3">
+          <label class="form-label">Solubilité</label>
+          <select name="solubility_select" id="solubility-select" class="form-select">
+            <option value="">— Sélectionner —</option>
+            <option value="Soluble dans l'eau" {% if ingredient.solubility == "Soluble dans l'eau" %}selected{% endif %}>Soluble dans l'eau</option>
+            <option value="Soluble dans l'huile" {% if ingredient.solubility == "Soluble dans l'huile" %}selected{% endif %}>Soluble dans l'huile</option>
+            <option value="Soluble eau et huile" {% if ingredient.solubility == 'Soluble eau et huile' %}selected{% endif %}>Soluble eau et huile</option>
+            <option value="Insoluble dans l'eau" {% if ingredient.solubility == "Insoluble dans l'eau" %}selected{% endif %}>Insoluble dans l'eau</option>
+            <option value="autre" {% if ingredient.solubility and ingredient.solubility not in "Soluble dans l'eau,Soluble dans l'huile,Soluble eau et huile,Insoluble dans l'eau" %}selected{% endif %}>Autre...</option>
+          </select>
+          <input type="text" name="solubility" id="solubility-custom" class="form-control mt-2"
+                 placeholder="Précisez..."
+                 value="{{ ingredient.solubility|default:'' }}"
+                 style="display:none">
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Mode d'emploi</label>
+          <textarea name="usage_mode" class="form-control" rows="3"
+                    placeholder="Ex: Incorporer en phase huileuse à 65°C...">{{ ingredient.usage_mode|default:'' }}</textarea>
+        </div>
+
+        <!-- ── Stockage ── -->
+        <div class="col-12"><h6 class="fw-bold text-muted border-bottom pb-2 mt-2">Stockage & Notes</h6></div>
+
+        <div class="col-12">
+          <label class="form-label">Stockage & Conservation</label>
+          <textarea name="storage" class="form-control" rows="2"
+                    placeholder="Ex: À conserver à l'abri de la lumière...">{{ ingredient.storage|default:'' }}</textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Notes</label>
+          <textarea name="notes" class="form-control" rows="2">{{ ingredient.notes|default:'' }}</textarea>
+        </div>
+
+        <div class="col-12 d-flex gap-2 mt-2">
+          <button type="submit" class="btn btn-brand">Enregistrer</button>
+          <a href="{% url 'rnd:ingredient_list' %}" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Origine ──
+const originSelect = document.getElementById('origin-select');
+const originCustom = document.getElementById('origin-custom');
+function toggleOrigin() {
+  if (originSelect.value === 'autre') {
+    originCustom.style.display = 'block';
+    originCustom.name = 'origin';
+    originSelect.name = '';
+  } else {
+    originCustom.style.display = 'none';
+    originCustom.name = '';
+    originSelect.name = 'origin';
+  }
+}
+originSelect.addEventListener('change', toggleOrigin);
+toggleOrigin();
+
+// ── Phase d'ajout ──
+const phaseSelect = document.getElementById('phase-select');
+const phaseCustom = document.getElementById('phase-custom');
+function togglePhase() {
+  if (phaseSelect.value === 'autre') {
+    phaseCustom.style.display = 'block';
+    phaseCustom.name = 'addition_phase';
+    phaseSelect.name = '';
+  } else {
+    phaseCustom.style.display = 'none';
+    phaseCustom.name = '';
+    phaseSelect.name = 'addition_phase';
+  }
+}
+phaseSelect.addEventListener('change', togglePhase);
+togglePhase();
+
+// ── Solubilité ──
+const solubilitySelect = document.getElementById('solubility-select');
+const solubilityCustom = document.getElementById('solubility-custom');
+function toggleSolubility() {
+  if (solubilitySelect.value === 'autre') {
+    solubilityCustom.style.display = 'block';
+    solubilityCustom.name = 'solubility';
+    solubilitySelect.name = '';
+  } else {
+    solubilityCustom.style.display = 'none';
+    solubilityCustom.name = '';
+    solubilitySelect.name = 'solubility';
+  }
+}
+solubilitySelect.addEventListener('change', toggleSolubility);
+toggleSolubility();
+</script>
+{% endblock %}

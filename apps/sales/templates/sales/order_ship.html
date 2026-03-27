@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Expédition Commande {{ order.order_number }}{% endblock %}
+{% block page_title %}Expédier Commande CV-{{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{% url 'sales:order_detail' order.pk %}" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Retour à la commande
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white border-0 pt-4 pb-0">
+        <h5 class="fw-bold"><i class="fas fa-box-open text-brand me-2"></i>Préparation de l'expédition</h5>
+        <p class="text-muted small">Sélectionnez les lots pour déduire automatiquement le stock des produits finis.</p>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Date d'expédition *</label>
+                    <input type="date" name="shipment_date" class="form-control" required value="{% now 'Y-m-d' %}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Numéro de suivi (Tracking)</label>
+                    <input type="text" name="tracking_number" class="form-control" placeholder="Ex: TN-98273XX">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Notes</label>
+                    <input type="text" name="notes" class="form-control" placeholder="Instruction de livraison...">
+                </div>
+            </div>
+
+            <h6 class="fw-bold mt-4 mb-3 border-bottom pb-2">Lignes à expédier</h6>
+            
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Produit Fini</th>
+                            <th class="text-center">Quantité Commandée</th>
+                            <th class="text-center">Déjà Expédié</th>
+                            <th class="text-center" style="width: 15%;">Quantité à Expédier</th>
+                            <th style="width: 35%;">Sélection du Lot (Stock disponible)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for line in order.lines.all %}
+                        {% if line.shipped_quantity < line.quantity %}
+                        <tr>
+                            <td class="fw-semibold">{{ line.material.name }}</td>
+                            <td class="text-center">{{ line.quantity }}</td>
+                            <td class="text-center">{{ line.shipped_quantity }}</td>
+                            <td>
+                                <!-- Quantité restante par défaut -->
+                                <input type="number" step="0.01" max="{{ line.quantity|add:'-'|add:line.shipped_quantity }}" 
+                                       name="qty_{{ line.pk }}" class="form-control text-center text-primary fw-bold" 
+                                       value="{{ line.quantity|add:'-'|add:line.shipped_quantity }}" required>
+                            </td>
+                            <td>
+                                <select name="lot_{{ line.pk }}" class="form-select" required>
+                                    <option value="">-- Choisir un lot --</option>
+                                    {% for lot in material_lots|dict_get:line.material.pk %}
+                                        <option value="{{ lot.pk }}">Lot {{ lot.lot_number }} (Dispo: {{ lot.current_quantity }})</option>
+                                    {% empty %}
+                                        <option value="" disabled>⚠️ Aucun lot en stock !</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">Aucune ligne ne nécessite d'expédition.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 text-end">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fas fa-check-circle me-2"></i>Valider l'expédition et Déduire du stock
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

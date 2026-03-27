@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Alertes Stock{% endblock %}
+{% block page_title %}Alertes Stock{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+{% if low_stock %}
+<div class="card mb-3 border-danger">
+    <div class="card-header bg-danger bg-opacity-10">
+        <i class="fas fa-exclamation-triangle me-2 text-danger"></i>Stock bas ({{ low_stock|length }})
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr><th>Matière</th><th>Stock actuel</th><th>Minimum</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+            {% for m in low_stock %}
+            <tr class="table-danger">
+                <td><a href="{% url 'stock:material_detail' m.pk %}">{{ m.name }}</a></td>
+                <td class="text-danger fw-bold">{{ m.total_quantity }} {{ m.unit }}</td>
+                <td>{{ m.minimum_stock }} {{ m.unit }}</td>
+                <td><a href="{% url 'purchase:order_add' %}" class="btn btn-sm btn-warning py-0">Commander</a></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if expiring %}
+<div class="card mb-3 border-orange" style="border-color:#f97316!important">
+    <div class="card-header" style="background:#fff7ed">
+        <i class="fas fa-calendar-times me-2" style="color:#f97316"></i>Lots expirant bientôt ({{ expiring|length }})
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>Matière</th><th>Lot</th><th>Qté</th><th>Expiration</th></tr></thead>
+            <tbody>
+            {% for lot in expiring %}
+            <tr>
+                <td><a href="{% url 'stock:material_detail' lot.material.pk %}">{{ lot.material.name }}</a></td>
+                <td>{{ lot.lot_number }}</td>
+                <td>{{ lot.current_quantity }} {{ lot.material.unit }}</td>
+                <td class="text-warning fw-bold">{{ lot.expiry_date|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if expired %}
+<div class="card border-danger">
+    <div class="card-header bg-danger bg-opacity-10">
+        <i class="fas fa-ban me-2 text-danger"></i>Lots expirés ({{ expired|length }})
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>Matière</th><th>Lot</th><th>Qté</th><th>Expiration</th></tr></thead>
+            <tbody>
+            {% for lot in expired %}
+            <tr class="table-danger">
+                <td>{{ lot.material.name }}</td>
+                <td>{{ lot.lot_number }}</td>
+                <td>{{ lot.current_quantity }}</td>
+                <td class="text-danger fw-bold">{{ lot.expiry_date|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if not low_stock and not expiring and not expired %}
+<div class="text-center py-5">
+    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+    <h4 class="text-success">Tout est en ordre !</h4>
+    <p class="text-muted">Aucune alerte de stock active.</p>
+</div>
+{% endif %}
+
+</div>
+{% endblock %}

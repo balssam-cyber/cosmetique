@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Reception{% endblock %}
+{% block page_title %}Reception - BC-{{ order.order_number }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-12 col-lg-8">
+<div class="card"><div class="card-body">
+<form method="post">{% csrf_token %}
+<div class="row g-3 mb-4">
+    <div class="col-md-4"><label class="form-label">Date reception *</label><input type="date" name="receipt_date" class="form-control" required></div>
+    <div class="col-md-4"><label class="form-label">Reference BL</label><input type="text" name="reference" class="form-control" placeholder="Numero bon de livraison"></div>
+    <div class="col-12"><label class="form-label">Notes</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
+</div>
+<h6 class="fw-bold mb-3">Lignes de reception</h6>
+<div class="table-responsive">
+<table class="table table-bordered">
+    <thead class="table-light"><tr><th>Matiere</th><th>Qte commandee</th><th>N Lot fournisseur</th><th>Qte recue</th><th>Date expiration</th></tr></thead>
+    <tbody>
+    {% for line in order.lines.all %}
+    <tr>
+        <td class="fw-semibold">{{ line.material.name }}<br><small class="text-muted">{{ line.material.unit }}</small></td>
+        <td>{{ line.quantity }}</td>
+        <td><input type="text" name="lot_{{ line.pk }}" class="form-control form-control-sm" placeholder="LOT-XXX"></td>
+        <td><input type="number" name="qty_{{ line.pk }}" class="form-control form-control-sm" step="0.01" value="{{ line.quantity }}" required></td>
+        <td><input type="date" name="expiry_{{ line.pk }}" class="form-control form-control-sm"></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+<div class="d-flex gap-2 mt-3"><button type="submit" class="btn btn-brand"><i class="fas fa-check me-1"></i>Valider reception</button><a href="{% url 'purchase:order_detail' order.pk %}" class="btn btn-outline-secondary">Annuler</a></div>
+</form></div></div>
+</div></div>
+{% endblock %}

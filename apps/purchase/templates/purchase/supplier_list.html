@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Fournisseurs{% endblock %}
+{% block page_title %}Fournisseurs{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <form class="d-flex gap-2" method="get">
+        <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Rechercher..." style="width:200px">
+        <button type="submit" class="btn btn-sm btn-secondary">Filtrer</button>
+    </form>
+    <a href="{% url 'purchase:supplier_add' %}" class="btn btn-sm btn-brand"><i class="fas fa-plus me-1"></i>Nouveau fournisseur</a>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Code</th><th>Nom</th><th>Contact</th><th>Email</th><th>Pays</th><th></th></tr></thead>
+    <tbody>
+    {% for s in suppliers %}
+    <tr>
+        <td class="fw-semibold">{{ s.code }}</td>
+        <td><a href="{% url 'purchase:supplier_detail' s.pk %}">{{ s.name }}</a></td>
+        <td class="text-muted small">{{ s.contact_name|default:"-" }}</td>
+        <td class="text-muted small">{{ s.email|default:"-" }}</td>
+        <td>{{ s.country|default:"-" }}</td>
+        <td><a href="{% url 'purchase:supplier_edit' s.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2">Éditer</a></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="text-center text-muted py-4">Aucun fournisseur.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div></div>
+{% endblock %}

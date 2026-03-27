@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% block title %}Tableau de bord{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+
+    <!-- ── Alertes actives ── -->
+    {% if low_stock_count or expiring_count or failed_qc or pending_regulatory or shortages_count %}
+    <div class="col-12">
+        <div class="card" style="border-color:rgba(201,168,76,0.4)">
+            <div class="card-body py-2">
+                <div class="d-flex flex-wrap gap-3 align-items-center">
+                    <strong style="color:#c9a84c"><i class="fas fa-exclamation-triangle me-1"></i>Alertes actives:</strong>
+                    {% if low_stock_count %}
+                    <a href="{% url 'stock:alerts' %}" class="badge bg-warning text-dark text-decoration-none">
+                        <i class="fas fa-boxes me-1"></i>{{ low_stock_count }} stock(s) faible(s)
+                    </a>
+                    {% endif %}
+                    {% if expiring_count %}
+                    <a href="{% url 'stock:alerts' %}" class="badge text-decoration-none" style="background:#fed7aa;color:#7c2d12">
+                        <i class="fas fa-calendar-times me-1"></i>{{ expiring_count }} lot(s) expirant
+                    </a>
+                    {% endif %}
+                    {% if failed_qc %}
+                    <span class="badge bg-danger">
+                        <i class="fas fa-times-circle me-1"></i>{{ failed_qc }} échec(s) CQ
+                    </span>
+                    {% endif %}
+                    {% if pending_regulatory %}
+                    <span class="badge bg-info">
+                        <i class="fas fa-shield-alt me-1"></i>{{ pending_regulatory }} échéance(s) réglementaire(s)
+                    </span>
+                    {% endif %}
+                    {% if shortages_count %}
+                    <span class="badge bg-warning text-dark">
+                        <i class="fas fa-exclamation-circle me-1"></i>{{ shortages_count }} manque(s) stock
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Manques stock ── -->
+    {% if active_shortages %}
+    <div class="col-12">
+        <div class="card" style="border-color:rgba(201,168,76,0.4)">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>
+                    <i class="fas fa-exclamation-circle me-2" style="color:#c9a84c"></i>
+                    <strong style="color:#c9a84c">Manques stock non résolus ({{ shortages_count }})</strong>
+                </span>
+                <small class="text-muted">Cliquez sur ✓ pour marquer comme résolu</small>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Commande</th>
+                            <th>Matière</th>
+                            <th class="text-end">Attendu</th>
+                            <th class="text-end">Reçu</th>
+                            <th>Note</th>
+                            <th>Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for shortage in active_shortages %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'purchase:order_detail' shortage.order.pk %}" class="fw-semibold text-decoration-none">
+                                BC-{{ shortage.order.order_number }}
+                            </a>
+                        </td>
+                        <td class="fw-semibold">{{ shortage.material_name }}</td>
+                        <td class="text-end">{{ shortage.expected_quantity }}</td>
+                        <td class="text-end fw-bold" style="color:#c9a84c">{{ shortage.received_quantity }}</td>
+                        <td class="text-muted small">{{ shortage.note|default:"—" }}</td>
+                        <td class="text-muted small">{{ shortage.created_at|date:"d/m/Y" }}</td>
+                        <td>
+                            <a href="{% url 'purchase:resolve_shortage' shortage.pk %}"
+                               class="btn btn-sm btn-outline-success py-0 px-2"
+                               onclick="return confirm('Marquer comme résolu ?')"
+                               title="Résoudre">
+                                <i class="fas fa-check"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- ── Stats ── -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-number">{{ total_products }}</div>
+                    <div class="stat-label">Produits R&D</div>
+                    <small class="text-success">{{ products_approved }} approuvés</small>
+                </div>
+                <div class="stat-icon" style="background:rgba(201,168,76,0.1);color:#c9a84c">
+                    <i class="fas fa-atom"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-number">{{ batches_in_progress }}</div>
+                    <div class="stat-label">Production en cours</div>
+                    <small class="text-muted">{{ batches_completed }} terminés</small>
+                </div>
+                <div class="stat-icon" style="background:rgba(96,165,250,0.1);color:#60a5fa">
+                    <i class="fas fa-industry"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-number {% if low_stock_count > 0 %}text-danger{% endif %}">{{ low_stock_count }}</div>
+                    <div class="stat-label">Stocks faibles</div>
+                    <small style="color:#c9a84c">{{ expiring_count }} expirant</small>
+                </div>
+                <div class="stat-icon" style="background:rgba(248,113,113,0.1);color:#f87171">
+                    <i class="fas fa-boxes"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-number">{{ orders_this_month }}</div>
+                    <div class="stat-label">Ventes ce mois</div>
+                    <small class="text-muted">{{ pending_sales }} en attente</small>
+                </div>
+                <div class="stat-icon" style="background:rgba(74,222,128,0.1);color:#4ade80">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+
+    <!-- ── Derniers lots ── -->
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-industry me-2" style="color:#60a5fa"></i>Derniers lots de production</span>
+                <a href="{% url 'production:batch_list' %}" class="btn btn-sm btn-outline-primary">Voir tout</a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Lot</th><th>Produit</th><th>Statut</th><th>Date</th></tr></thead>
+                    <tbody>
+                    {% for batch in recent_batches %}
+                    <tr>
+                        <td><a href="{% url 'production:batch_detail' batch.pk %}" class="text-decoration-none fw-semibold">{{ batch.batch_number }}</a></td>
+                        <td class="text-muted small">{{ batch.formulation.product.name|truncatechars:20 }}</td>
+                        <td><span class="badge badge-status-{{ batch.status }}">{{ batch.get_status_display }}</span></td>
+                        <td class="text-muted small">{{ batch.production_date|date:"d/m/Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted py-3">Aucun lot</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Alertes stock faible ── -->
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-exclamation-triangle me-2" style="color:#c9a84c"></i>Alertes stock faible</span>
+                <a href="{% url 'stock:alerts' %}" class="btn btn-sm btn-outline-warning">Voir tout</a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Matière</th><th>Disponible</th><th>Minimum</th><th></th></tr></thead>
+                    <tbody>
+                    {% for material in low_stock_items %}
+                    <tr>
+                        <td class="fw-semibold">{{ material.name|truncatechars:25 }}</td>
+                        <td class="text-danger fw-bold">{{ material.total_quantity }} {{ material.unit }}</td>
+                        <td class="text-muted">{{ material.minimum_stock }} {{ material.unit }}</td>
+                        <td><a href="{% url 'stock:material_detail' material.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2">Voir</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted py-3"><i class="fas fa-check-circle text-success"></i> Tous les stocks sont OK</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Accès rapides ── -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><i class="fas fa-bolt me-2" style="color:#c9a84c"></i>Accès rapides</div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'rnd:product_add' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-plus me-1"></i>Nouveau produit R&D</a>
+                    <a href="{% url 'production:batch_add' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-plus me-1"></i>Nouveau lot production</a>
+                    <a href="{% url 'purchase:order_add' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-plus me-1"></i>Bon de commande</a>
+                    <a href="{% url 'sales:order_add' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-plus me-1"></i>Commande vente</a>
+                    <a href="{% url 'regulatory:safety_report_add' %}" class="btn btn-outline-primary btn-sm"><i class="fas fa-plus me-1"></i>Rapport RSP</a>
+                    <a href="/api-auth/login/" class="btn btn-outline-secondary btn-sm"><i class="fas fa-code me-1"></i>API REST</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

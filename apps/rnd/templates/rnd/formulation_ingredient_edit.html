@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Modifier ingrédient{% endblock %}
+{% block page_title %}Modifier — {{ fi.ingredient.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-12 col-lg-5">
+<div class="card">
+    <div class="card-header fw-bold">
+        <i class="fas fa-edit me-2 text-primary"></i>Modifier l'ingrédient dans la formulation
+    </div>
+    <div class="card-body">
+        <div class="alert alert-light border mb-3">
+            <strong>Formulation :</strong> {{ fi.formulation }}<br>
+            <strong>Ingrédient :</strong> {{ fi.ingredient.name }}
+            {% if fi.ingredient.inci_name %}<span class="text-muted"> ({{ fi.ingredient.inci_name }})</span>{% endif %}
+            {% if fi.ingredient.max_concentration %}
+            <br><span class="text-info small">Concentration max autorisée : {{ fi.ingredient.max_concentration }}%</span>
+            {% endif %}
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Pourcentage (%) *</label>
+                    <div class="input-group">
+                        <input type="number" name="percentage" class="form-control" id="pctInput"
+                               step="0.0001" min="0.0001"
+                               {% if fi.ingredient.max_concentration %}max="{{ fi.ingredient.max_concentration }}"{% endif %}
+                               value="{{ fi.percentage }}" required>
+                        <span class="input-group-text">%</span>
+                    </div>
+                    <div class="form-text">
+                        → <strong id="qtyCalc">{% widthratio fi.percentage 100 fi.formulation.batch_size %} kg</strong>
+                        pour {{ fi.formulation.batch_size }} kg de lot
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Phase</label>
+                    <select name="phase" class="form-select">
+                        {% for val, label in phase_choices %}
+                        <option value="{{ val }}" {% if fi.phase == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Fonction</label>
+                    <input type="text" name="function" class="form-control" value="{{ fi.function }}">
+                </div>
+                <div class="col-12 d-flex gap-2 pt-2">
+                    <button type="submit" class="btn btn-brand">
+                        <i class="fas fa-save me-1"></i>Enregistrer
+                    </button>
+                    <a href="{% url 'rnd:formulation_detail' fi.formulation.pk %}" class="btn btn-outline-secondary">
+                        Annuler
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const batchSize = {{ fi.formulation.batch_size }};
+document.getElementById('pctInput').addEventListener('input', function() {
+    const qty = (parseFloat(this.value || 0) / 100 * batchSize).toFixed(4);
+    document.getElementById('qtyCalc').textContent = qty + ' kg';
+});
+</script>
+{% endblock %}

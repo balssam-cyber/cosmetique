@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Test de stabilité{% endblock %}
+{% block page_title %}Ajouter un test de stabilité — {{ formulation }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-12 col-lg-6">
+<div class="card"><div class="card-body">
+<form method="post">{% csrf_token %}
+<div class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Condition *</label>
+        <select name="condition" class="form-select" required>
+            {% for val, label in condition_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label fw-semibold">Durée (semaines) *</label>
+        <input type="number" name="duration_weeks" class="form-control" min="1" required>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label fw-semibold">Résultat</label>
+        <select name="result" class="form-select">
+            {% for val, label in result_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-md-4"><label class="form-label fw-semibold">Date début *</label><input type="date" name="start_date" class="form-control" required></div>
+    <div class="col-md-4"><label class="form-label fw-semibold">Date fin</label><input type="date" name="end_date" class="form-control"></div>
+    <div class="col-md-2"><label class="form-label fw-semibold">pH initial</label><input type="number" name="ph_initial" class="form-control" step="0.01"></div>
+    <div class="col-md-2"><label class="form-label fw-semibold">pH final</label><input type="number" name="ph_final" class="form-control" step="0.01"></div>
+    <div class="col-12">
+        <div class="d-flex gap-4">
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="appearance_ok" id="app_ok"><label class="form-check-label" for="app_ok">Aspect OK</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="odor_ok" id="odor_ok"><label class="form-check-label" for="odor_ok">Odeur OK</label></div>
+        </div>
+    </div>
+    <div class="col-12"><label class="form-label fw-semibold">Observations</label><textarea name="observations" class="form-control" rows="3"></textarea></div>
+    <div class="col-12 d-flex gap-2"><button type="submit" class="btn btn-brand">Enregistrer</button><a href="{% url 'rnd:formulation_detail' formulation.pk %}" class="btn btn-outline-secondary">Annuler</a></div>
+</div>
+</form></div></div>
+</div></div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}{{ ingredient.name }}{% endblock %}
+{% block page_title %}{{ ingredient.name }}{% endblock %}
+{% block content %}
+<div class="d-flex gap-2 mb-3">
+    <a href="{% url 'rnd:ingredient_list' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Retour</a>
+    {% if can_edit %}<a href="{% url 'rnd:ingredient_edit' ingredient.pk %}" class="btn btn-sm btn-brand"><i class="fas fa-edit me-1"></i>Éditer</a>{% endif %}
+</div>
+<div class="card col-lg-6">
+    <div class="card-header">Détails de l'ingrédient</div>
+    <div class="card-body">
+        <table class="table table-sm table-borderless">
+            <tr><th>Nom INCI</th><td>{{ ingredient.inci_name|default:"-" }}</td></tr>
+            <tr><th>Numéro CAS</th><td>{{ ingredient.cas_number|default:"-" }}</td></tr>
+            <tr><th>Catégorie</th><td>{{ ingredient.get_category_display }}</td></tr>
+            <tr><th>Fournisseur</th><td>{{ ingredient.supplier|default:"-" }}</td></tr>
+            <tr><th>Conc. max</th><td>{{ ingredient.max_concentration|default:"-" }}{% if ingredient.max_concentration %}%{% endif %}</td></tr>
+            <tr><th>Restreint</th><td>{% if ingredient.is_restricted %}<span class="badge bg-danger">Oui</span>{% else %}<span class="badge bg-success">Non</span>{% endif %}</td></tr>
+        </table>
+        {% if ingredient.notes %}<hr><p class="text-muted small">{{ ingredient.notes }}</p>{% endif %}
+    </div>
+</div>
+{% endblock %}

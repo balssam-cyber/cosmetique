@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Ajouter CQ{% endblock %}
+{% block page_title %}Contrôle qualité - Lot {{ batch.batch_number }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-12 col-lg-6">
+<div class="card"><div class="card-body">
+<form method="post">{% csrf_token %}
+<div class="row g-3">
+    <div class="col-12"><label class="form-label">Nom du test *</label><input type="text" name="test_name" class="form-control" placeholder="Ex: pH, Viscosité, Aspect..." required></div>
+    <div class="col-md-6"><label class="form-label">Spécification</label><input type="text" name="specification" class="form-control" placeholder="Ex: 5.0 - 6.5"></div>
+    <div class="col-md-6"><label class="form-label">Valeur mesurée</label><input type="text" name="measured_value" class="form-control" placeholder="Ex: 5.8"></div>
+    <div class="col-md-6"><label class="form-label">Résultat *</label>
+        <select name="result" class="form-select" required>{% for val, label in result_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}</select>
+    </div>
+    <div class="col-12"><label class="form-label">Notes</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
+    <div class="col-12 d-flex gap-2"><button type="submit" class="btn btn-brand">Enregistrer</button><a href="{% url 'production:batch_detail' batch.pk %}" class="btn btn-outline-secondary">Annuler</a></div>
+</div>
+</form></div></div>
+</div></div>
+{% endblock %}

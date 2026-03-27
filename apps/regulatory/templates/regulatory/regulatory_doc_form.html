@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %}{% if doc %}Modifier Document{% else %}Nouveau Document{% endif %}{% endblock %}
+{% block page_title %}{% if doc %}Modifier Document Réglementaire{% else %}Nouveau Document Réglementaire{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1" style="color:#c9a84c;">
+            <i class="fas fa-file-medical-alt me-2"></i>
+            {% if doc %}Modifier le document{% else %}Ajouter un document réglementaire{% endif %}
+        </h4>
+        <p class="text-muted mb-0">Certificat, licence, enregistrement, rapport…</p>
+    </div>
+    <a href="{% url 'regulatory:doc_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Retour
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-3">
+                <!-- Produit -->
+                <div class="col-md-6">
+                    <label class="form-label">Produit <span class="text-danger">*</span></label>
+                    <select name="product" class="form-select" required>
+                        <option value="">— Sélectionner un produit —</option>
+                        {% for p in products %}
+                        <option value="{{ p.pk }}"
+                            {% if doc and doc.product_id == p.pk %}selected
+                            {% elif presel_product and presel_product.pk == p.pk %}selected{% endif %}>
+                            {{ p.reference }} — {{ p.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Pays -->
+                <div class="col-md-6">
+                    <label class="form-label">Pays / Marché <span class="text-danger">*</span></label>
+                    <input type="text" name="country" class="form-control" required
+                           placeholder="Ex: Tunisie, UE, Maroc, UAE…"
+                           value="{{ doc.country|default:'' }}">
+                    <div class="form-text">Saisie libre — tout pays ou zone commerciale</div>
+                </div>
+
+                <!-- Autorité -->
+                <div class="col-md-6">
+                    <label class="form-label">Autorité compétente</label>
+                    <input type="text" name="authority" class="form-control"
+                           placeholder="Ex: INNORPI, Ministère de la Santé, SFDA…"
+                           value="{{ doc.authority|default:'' }}">
+                </div>
+
+                <!-- Type de document -->
+                <div class="col-md-6">
+                    <label class="form-label">Type de document <span class="text-danger">*</span></label>
+                    <select name="doc_type" class="form-select" required>
+                        {% for val, label in doc_type_choices %}
+                        <option value="{{ val }}" {% if doc and doc.doc_type == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Référence -->
+                <div class="col-md-6">
+                    <label class="form-label">Numéro / Référence</label>
+                    <input type="text" name="reference" class="form-control"
+                           placeholder="Numéro officiel d'enregistrement…"
+                           value="{{ doc.reference|default:'' }}">
+                </div>
+
+                <!-- Statut -->
+                <div class="col-md-6">
+                    <label class="form-label">Statut</label>
+                    <select name="status" class="form-select">
+                        {% for val, label in status_choices %}
+                        <option value="{{ val }}" {% if doc and doc.status == val %}selected{% elif not doc and val == 'pending' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Dates -->
+                <div class="col-md-6">
+                    <label class="form-label">Date d'émission</label>
+                    <input type="date" name="issue_date" class="form-control"
+                           value="{{ doc.issue_date|date:'Y-m-d'|default:'' }}">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Date d'expiration</label>
+                    <input type="date" name="expiry_date" class="form-control"
+                           value="{{ doc.expiry_date|date:'Y-m-d'|default:'' }}">
+                </div>
+
+                <!-- Fichier -->
+                <div class="col-12">
+                    <label class="form-label">Fichier joint (PDF, image…)</label>
+                    {% if doc and doc.document_file %}
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            <i class="fas fa-paperclip me-1"></i>Fichier actuel :
+                            <a href="{{ doc.document_file.url }}" target="_blank">{{ doc.document_file.name }}</a>
+                        </small>
+                    </div>
+                    {% endif %}
+                    <input type="file" name="document_file" class="form-control"
+                           accept=".pdf,.png,.jpg,.jpeg,.doc,.docx">
+                </div>
+
+                <!-- Notes -->
+                <div class="col-12">
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" class="form-control" rows="3"
+                              placeholder="Informations supplémentaires…">{{ doc.notes|default:'' }}</textarea>
+                </div>
+            </div>
+
+            <hr style="border-color:rgba(201,168,76,0.2);" class="my-4">
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>
+                    {% if doc %}Enregistrer les modifications{% else %}Créer le document{% endif %}
+                </button>
+                <a href="{% url 'regulatory:doc_list' %}" class="btn btn-outline-secondary">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Tests de stabilité{% endblock %}
+{% block page_title %}Tests de stabilité{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead><tr><th>Formulation</th><th>Produit</th><th>Condition</th><th>Durée</th><th>Début</th><th>Résultat</th></tr></thead>
+            <tbody>
+            {% for test in tests %}
+            <tr>
+                <td><a href="{% url 'rnd:formulation_detail' test.formulation.pk %}">{{ test.formulation }}</a></td>
+                <td class="text-muted">{{ test.formulation.product.name }}</td>
+                <td>{{ test.get_condition_display }}</td>
+                <td>{{ test.duration_weeks }} sem.</td>
+                <td>{{ test.start_date|date:"d/m/Y" }}</td>
+                <td><span class="badge badge-{{ test.result }}">{{ test.get_result_display }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">Aucun test de stabilité.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

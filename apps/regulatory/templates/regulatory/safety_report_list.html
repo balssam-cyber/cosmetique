@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Rapports RSP{% endblock %}
+{% block page_title %}Rapports de securite (RSP){% endblock %}
+{% block content %}
+<div class="d-flex justify-content-end mb-3">
+    <a href="{% url 'regulatory:safety_report_add' %}" class="btn btn-sm btn-brand"><i class="fas fa-plus me-1"></i>Nouveau rapport</a>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>N Rapport</th><th>Produit</th><th>Statut</th><th>Evaluateur</th><th>Emission</th><th>Expiration</th><th></th></tr></thead>
+    <tbody>
+    {% for r in reports %}
+    <tr>
+        <td><a href="{% url 'regulatory:safety_report_detail' r.pk %}" class="fw-semibold">{{ r.report_number }}</a></td>
+        <td>{{ r.product.name }}</td>
+        <td><span class="badge badge-status-{{ r.status }}">{{ r.get_status_display }}</span></td>
+        <td class="text-muted small">{{ r.safety_assessor }}</td>
+        <td class="text-muted small">{{ r.issue_date|date:"d/m/Y"|default:"-" }}</td>
+        <td class="{% if r.expiry_date %}text-warning{% endif %}">{{ r.expiry_date|date:"d/m/Y"|default:"-" }}</td>
+        <td><a href="{% url 'regulatory:safety_report_edit' r.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2">Editer</a></td>
+    </tr>
+    {% empty %}<tr><td colspan="7" class="text-center text-muted py-4">Aucun rapport RSP.</td></tr>{% endfor %}
+    </tbody>
+</table>
+</div></div>
+{% endblock %}

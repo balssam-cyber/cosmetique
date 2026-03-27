@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% block title %}Lot {{ batch.batch_number }}{% endblock %}
+{% block page_title %}Lot {{ batch.batch_number }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <a href="{% url 'production:batch_list' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Retour
+    </a>
+    <a href="{% url 'production:batch_edit' batch.pk %}" class="btn btn-sm btn-brand">
+        <i class="fas fa-edit me-1"></i>Éditer
+    </a>
+    {% if batch.status == 'planned' %}
+    <form method="post" action="{% url 'production:batch_start' batch.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-success"
+                onclick="return confirm('Lancer la production et déduire le stock ?')">
+            <i class="fas fa-play me-1"></i>Lancer la production
+        </button>
+    </form>
+    {% elif batch.status == 'in_progress' %}
+    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#completeModal">
+        <i class="fas fa-check-double me-1"></i>Terminer la production
+    </button>
+    {% endif %}
+    <a href="{% url 'production:qc_add' batch.pk %}" class="btn btn-sm btn-outline-info">
+        <i class="fas fa-microscope me-1"></i>Ajouter CQ
+    </a>
+</div>
+
+<div class="row g-3">
+    <!-- Left: Info -->
+    <div class="col-12 col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header fw-bold"><i class="fas fa-info-circle me-2 text-primary"></i>Informations</div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr><th>Produit</th><td>{{ batch.formulation.product.name }}</td></tr>
+                    <tr><th>Formulation</th><td>
+                        <a href="{% url 'rnd:formulation_detail' batch.formulation.pk %}">
+                            v{{ batch.formulation.version }}
+                        </a>
+                    </td></tr>
+                    <tr><th>Statut</th><td>
+                        {% if batch.status == 'planned' %}<span class="badge bg-secondary">Planifié</span>
+                        {% elif batch.status == 'in_progress' %}<span class="badge bg-warning text-dark">En cours</span>
+                        {% elif batch.status == 'completed' %}<span class="badge bg-success">Terminé</span>
+                        {% else %}<span class="badge bg-danger">Annulé</span>{% endif %}
+                    </td></tr>
+                    <tr><th>Qté planifiée</th><td class="fw-bold">{{ batch.planned_quantity }} kg</td></tr>
+                    <tr><th>Qté réelle</th><td>{{ batch.actual_quantity|default:"—" }}{% if batch.actual_quantity %} kg{% endif %}</td></tr>
+                    <tr><th>Date production</th><td>{{ batch.production_date|date:"d/m/Y" }}</td></tr>
+                    <tr><th>Responsable</th><td>{{ batch.responsible|default:"—" }}</td></tr>
+                    <tr><th>Résultat CQ</th><td>
+                        {% if batch.qc_passed == True %}<span class="badge bg-success">Conforme</span>
+                        {% elif batch.qc_passed == False %}<span class="badge bg-danger">Non conforme</span>
+                        {% else %}<span class="badge bg-light text-muted border">En attente</span>{% endif %}
+                    </td></tr>
+                    {% if batch.finished_lot %}
+                    <tr><th>Lot produit fini</th><td>
+                        <a href="{% url 'stock:lot_detail' batch.finished_lot.pk %}" class="badge bg-success text-decoration-none">
+                            {{ batch.finished_lot.lot_number }}
+                        </a>
+                    </td></tr>
+                    {% endif %}
+                </table>
+                {% if batch.notes %}
+                <hr class="my-2"><p class="small text-muted mb-0">{{ batch.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Matières + QC -->
+    <div class="col-12 col-lg-8">
+        <!-- Matières premières -->
+        <div class="card mb-3">
+            <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-boxes me-2 text-warning"></i>Matières premières (calculées depuis formulation)</span>
+                <span class="badge bg-secondary">{{ batch.formulation.batch_size }} kg std.</span>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ingrédient</th>
+                            <th class="text-center">%</th>
+                            <th class="text-end">Requis</th>
+                            <th class="text-end">Stock dispo</th>
+                            <th class="text-end">Réel utilisé</th>
+                            <th class="text-center">Lot utilisé</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for rm in raw_materials %}
+                    <tr class="{% if rm.stock_ok == False %}table-danger{% elif rm.stock_ok is None %}table-warning{% endif %}">
+                        <td>
+                            <strong>{{ rm.display_name }}</strong>
+                            {% if rm.material %}
+                            <br><small class="text-muted">{{ rm.material.code }}</small>
+                            {% else %}
+                            <br><small class="text-warning"><i class="fas fa-unlink me-1"></i>Non lié au stock</small>
+                            {% endif %}
+                        </td>
+                        <td class="text-center text-muted">
+                            {% if rm.ingredient_percentage %}{{ rm.ingredient_percentage|floatformat:2 }}%{% else %}—{% endif %}
+                        </td>
+                        <td class="text-end fw-bold">{{ rm.required_quantity }} {% if rm.material %}{{ rm.material.unit }}{% else %}kg{% endif %}</td>
+                        <td class="text-end">
+                            {% if rm.available_stock is not None %}
+                            <span class="{% if rm.stock_ok %}text-success{% else %}text-danger fw-bold{% endif %}">
+                                {{ rm.available_stock }} {{ rm.material.unit }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if rm.actual_quantity %}{{ rm.actual_quantity }}{% else %}<span class="text-muted">—</span>{% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if rm.lot %}
+                            <a href="{% url 'stock:lot_detail' rm.lot.pk %}" class="badge bg-info text-decoration-none">
+                                {{ rm.lot.lot_number|truncatechars:12 }}
+                            </a>
+                            {% else %}<span class="text-muted">—</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">
+                        Aucune matière. Modifiez le lot pour les calculer.
+                    </td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Contrôles qualité -->
+        <div class="card">
+            <div class="card-header fw-bold d-flex justify-content-between">
+                <span><i class="fas fa-microscope me-2 text-info"></i>Contrôles qualité</span>
+                <a href="{% url 'production:qc_add' batch.pk %}" class="btn btn-xs btn-sm btn-outline-info py-0 px-2">
+                    <i class="fas fa-plus me-1"></i>Ajouter
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Test</th><th>Spécification</th><th>Valeur mesurée</th><th>Résultat</th><th>Par</th><th>Date</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for qc in qc_checks %}
+                    <tr>
+                        <td class="fw-semibold">{{ qc.test_name }}</td>
+                        <td class="text-muted small">{{ qc.specification|default:"—" }}</td>
+                        <td>{{ qc.measured_value|default:"—" }}</td>
+                        <td>
+                            {% if qc.result == 'pass' %}<span class="badge bg-success">Conforme</span>
+                            {% elif qc.result == 'fail' %}<span class="badge bg-danger">Non conforme</span>
+                            {% else %}<span class="badge bg-warning text-dark">En attente</span>{% endif %}
+                        </td>
+                        <td class="text-muted small">{{ qc.performed_by|default:"—" }}</td>
+                        <td class="text-muted small">{{ qc.performed_at|date:"d/m/Y"|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted py-3">Aucun contrôle qualité.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Main d'Œuvre / HR -->
+        <div class="card mt-3 mb-3 border-light border-2">
+            <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-users-cog me-2 text-brand" style="color:#c9a84c;"></i>Temps de travail (Main d'Œuvre)</span>
+                <button class="btn btn-xs btn-sm btn-outline-primary py-0 px-2" data-bs-toggle="modal" data-bs-target="#timeLogModal" style="border-color:#c9a84c; color:#c9a84c;">
+                    <i class="fas fa-plus me-1"></i>Ajouter
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Opérateur / Employé</th><th>Date</th><th class="text-end">Heures</th><th class="text-end">Coût Horaire</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for log in time_logs %}
+                        <tr>
+                            <td><strong>{{ log.user.get_full_name|default:log.user.username }}</strong></td>
+                            <td>{{ log.date|date:"d/m/Y" }}</td>
+                            <td class="text-end fw-bold">{{ log.duration_hours }} h</td>
+                            <td class="text-end text-muted">{{ log.hourly_cost }} TND</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center text-muted py-3">Aucun temps de travail enregistré pour ce lot.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Terminer production -->
+{% if batch.status == 'in_progress' %}
+<div class="modal fade" id="completeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-check-double me-2"></i>Terminer la production</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'production:batch_complete' batch.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Quantité réellement produite (kg) *</label>
+                        <input type="number" name="actual_quantity" class="form-control"
+                               step="0.01" value="{{ batch.planned_quantity }}" required>
+                        <div class="form-text">Quantité planifiée : {{ batch.planned_quantity }} kg</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">N° Lot produit fini</label>
+                        <input type="text" name="finished_lot_number" class="form-control"
+                               value="PF-{{ batch.batch_number }}" required>
+                        <div class="form-text">Ce lot sera créé automatiquement dans le stock.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-1"></i>Confirmer et ajouter au stock
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+{% endif %}
+
+<!-- Modal: Ajouter Temps de travail -->
+<div class="modal fade" id="timeLogModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-brand border-2">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-clock me-2" style="color:#c9a84c;"></i>Saisir des heures travaillées</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'production:batch_time_log_add' batch.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Date de l'intervention</label>
+                        <input type="date" name="date" class="form-control" required value="{% now 'Y-m-d' %}">
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted">Durée (Heures) *</label>
+                            <input type="number" name="duration_hours" step="0.25" min="0" class="form-control" required placeholder="Ex: 2.5">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted">Coût horaire estimé (TND)</label>
+                            <input type="number" name="hourly_cost" step="0.1" min="0" class="form-control" value="0.0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-brand" style="background:#c9a84c; color:#111; font-weight:bold;">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

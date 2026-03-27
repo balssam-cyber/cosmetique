@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% block title %}{% if order %}Éditer commande{% else %}Nouvelle commande{% endif %}{% endblock %}
+{% block page_title %}{% if order %}Éditer — {{ order.order_number }}{% else %}Nouvelle commande{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-12 col-lg-10">
+<div class="card">
+  <div class="card-header"><h5 class="mb-0">Bon de commande</h5></div>
+  <div class="card-body">
+    <form method="post" id="order-form">
+      {% csrf_token %}
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-3">
+          <label class="form-label">N° Commande *</label>
+          <input type="text" name="order_number" class="form-control"
+                 value="{{ order.order_number|default:'' }}"
+                 {% if order %}readonly{% endif %} required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Fournisseur *</label>
+          <select name="supplier" class="form-select" required>
+            <option value="">— Sélectionner —</option>
+            {% for s in suppliers %}
+            <option value="{{ s.pk }}" {% if order.supplier_id == s.pk %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Date commande *</label>
+          <input type="date" name="order_date" class="form-control"
+                 value="{{ order.order_date|date:'Y-m-d'|default:'' }}" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Livraison prévue</label>
+          <input type="date" name="expected_delivery" class="form-control"
+                 value="{{ order.expected_delivery|date:'Y-m-d'|default:'' }}">
+        </div>
+
+        <!-- ── Devise & Taux ── -->
+        <div class="col-md-3">
+          <label class="form-label">Devise</label>
+          <select name="currency" id="currency-select" class="form-select">
+            {% for val, label in currency_choices %}
+            <option value="{{ val }}" {% if order.currency == val %}selected{% endif %}>{{ val }} — {{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Taux de change → TND</label>
+          <div class="input-group">
+            <input type="number" name="exchange_rate" id="exchange-rate" class="form-control"
+                   value="{{ order.exchange_rate|default:'1' }}" step="0.0001" min="0">
+            <button type="button" class="btn btn-outline-secondary" id="fetch-rate" title="Récupérer taux automatique">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+          <small class="text-muted" id="rate-info">1 TND = 1 TND</small>
+        </div>
+
+        {% if order %}
+        <div class="col-md-3">
+          <label class="form-label">Statut</label>
+          <select name="status" class="form-select">
+            {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if order.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
+        <div class="col-12">
+          <label class="form-label">Notes</label>
+          <textarea name="notes" class="form-control" rows="2">{{ order.notes|default:'' }}</textarea>
+        </div>
+      </div>
+
+      <h6 class="mb-2 fw-bold">Lignes de commande</h6>
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle" id="lines-table">
+          <thead class="table-light">
+            <tr>
+              <th style="min-width:220px">Matière *</th>
+              <th style="min-width:80px">Unité</th>
+              <th style="min-width:120px">Quantité *</th>
+              <th style="min-width:140px">Prix unitaire (<span id="currency-label">TND</span>)</th>
+              <th style="min-width:120px">Total ligne</th>
+              <th style="min-width:120px">Total TND</th>
+              <th style="width:50px"></th>
+            </tr>
+          </thead>
+          <tbody id="lines-body">
+            {% if order %}
+              {% for line in order.lines.all %}
+              <tr class="order-line">
+                <td><input type="text" name="material_name[]" class="form-control form-control-sm"
+                           value="{{ line.material.name }}" required></td>
+                <td><input type="text" name="material_unit[]" class="form-control form-control-sm"
+                           value="{{ line.material.unit }}" placeholder="kg"></td>
+                <td><input type="number" name="quantity[]" class="form-control form-control-sm qty-input"
+                           value="{{ line.quantity }}" min="0.001" step="0.001" required></td>
+                <td><input type="number" name="unit_price[]" class="form-control form-control-sm price-input"
+                           value="{{ line.unit_price }}" min="0" step="0.01"></td>
+                <td class="line-total fw-bold text-end">{{ line.total_price }}</td>
+                <td class="line-total-tnd fw-bold text-end text-success">—</td>
+                <td class="text-center">
+                  <button type="button" class="btn btn-sm btn-danger remove-line">✕</button>
+                </td>
+              </tr>
+              {% endfor %}
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <button type="button" class="btn btn-outline-secondary btn-sm mb-4" id="add-line">
+        + Ajouter une ligne
+      </button>
+
+      <div class="d-flex justify-content-end mb-4 gap-3">
+        <div class="border rounded px-4 py-2 bg-light text-center">
+          <small class="text-muted d-block">Total <span id="currency-total-label">TND</span></small>
+          <span class="fw-bold fs-5"><span id="grand-total">0.00</span> <span id="currency-symbol">TND</span></span>
+        </div>
+        <div class="border rounded px-4 py-2 bg-light text-center">
+          <small class="text-muted d-block">Total TND</small>
+          <span class="fw-bold fs-5 text-success"><span id="grand-total-tnd">0.00</span> TND</span>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          {% if order %}Sauvegarder{% else %}Créer la commande{% endif %}
+        </button>
+        <a href="{% url 'purchase:order_list' %}" class="btn btn-outline-secondary">Annuler</a>
+      </div>
+
+    </form>
+  </div>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function createRow() {
+  const tr = document.createElement('tr');
+  tr.className = 'order-line';
+  tr.innerHTML = `
+    <td><input type="text" name="material_name[]" class="form-control form-control-sm" placeholder="Ex: Huile d'argan" required></td>
+    <td><input type="text" name="material_unit[]" class="form-control form-control-sm" placeholder="kg"></td>
+    <td><input type="number" name="quantity[]" class="form-control form-control-sm qty-input" min="0.001" step="0.001" placeholder="0.00" required></td>
+    <td><input type="number" name="unit_price[]" class="form-control form-control-sm price-input" min="0" step="0.01" value="0.00"></td>
+    <td class="line-total fw-bold text-end">0.00</td>
+    <td class="line-total-tnd fw-bold text-end text-success">0.00</td>
+    <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-line">✕</button></td>
+  `;
+  return tr;
+}
+
+document.getElementById('add-line').addEventListener('click', () => {
+  document.getElementById('lines-body').appendChild(createRow());
+  recalculate();
+});
+
+{% if not order %}
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('lines-body').appendChild(createRow());
+  recalculate();
+});
+{% endif %}
+
+function getRate() {
+  return parseFloat(document.getElementById('exchange-rate').value) || 1;
+}
+
+function getCurrency() {
+  return document.getElementById('currency-select').value || 'TND';
+}
+
+function recalculate() {
+  const rate = getRate();
+  const currency = getCurrency();
+  let grand = 0;
+  let grandTnd = 0;
+
+  document.querySelectorAll('.order-line').forEach(row => {
+    const qty   = parseFloat(row.querySelector('.qty-input')?.value)   || 0;
+    const price = parseFloat(row.querySelector('.price-input')?.value) || 0;
+    const total = qty * price;
+    const totalTnd = total * rate;
+    row.querySelector('.line-total').textContent = total.toFixed(2);
+    row.querySelector('.line-total-tnd').textContent = totalTnd.toFixed(2);
+    grand += total;
+    grandTnd += totalTnd;
+  });
+
+  document.getElementById('grand-total').textContent = grand.toFixed(2);
+  document.getElementById('grand-total-tnd').textContent = grandTnd.toFixed(2);
+  document.getElementById('currency-symbol').textContent = currency;
+  document.getElementById('currency-label').textContent = currency;
+  document.getElementById('currency-total-label').textContent = currency;
+  document.getElementById('rate-info').textContent =
+    currency === 'TND' ? '1 TND = 1 TND' : `1 ${currency} = ${rate.toFixed(4)} TND`;
+}
+
+// ── Récupérer taux automatique ──
+document.getElementById('fetch-rate').addEventListener('click', async () => {
+  const currency = getCurrency();
+  if (currency === 'TND') {
+    document.getElementById('exchange-rate').value = '1';
+    recalculate();
+    return;
+  }
+  try {
+    document.getElementById('fetch-rate').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    const res = await fetch(`https://api.exchangerate-api.com/v4/latest/${currency}`);
+    const data = await res.json();
+    const rate = data.rates['TND'];
+    if (rate) {
+      document.getElementById('exchange-rate').value = rate.toFixed(4);
+      recalculate();
+    }
+  } catch(e) {
+    alert('Impossible de récupérer le taux — saisissez-le manuellement.');
+  } finally {
+    document.getElementById('fetch-rate').innerHTML = '<i class="fas fa-sync-alt"></i>';
+  }
+});
+
+document.getElementById('currency-select').addEventListener('change', recalculate);
+document.getElementById('exchange-rate').addEventListener('input', recalculate);
+document.getElementById('lines-body').addEventListener('input', recalculate);
+
+document.getElementById('lines-body').addEventListener('click', e => {
+  if (e.target.classList.contains('remove-line')) {
+    e.target.closest('tr').remove();
+    recalculate();
+  }
+});
+
+recalculate();
+</script>
+{% endblock %}

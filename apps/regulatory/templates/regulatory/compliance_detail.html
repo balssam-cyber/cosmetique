@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Conformite - {{ compliance.product.name }}{% endblock %}
+{% block page_title %}Conformite - {{ compliance.product.name }}{% endblock %}
+{% block content %}
+<div class="d-flex gap-2 mb-3">
+    <a href="{% url 'regulatory:compliance_list' %}" class="btn btn-sm btn-outline-secondary">Retour</a>
+</div>
+<div class="card col-lg-6"><div class="card-body">
+<table class="table table-sm table-borderless">
+    <tr><th>Produit</th><td><a href="{% url 'rnd:product_detail' compliance.product.pk %}">{{ compliance.product.name }}</a></td></tr>
+    <tr><th>Statut</th><td><span class="badge badge-status-{{ compliance.status }}">{{ compliance.get_status_display }}</span></td></tr>
+    <tr><th>Reg. UE 1223/2009</th><td>{% if compliance.eu_regulation %}Oui{% else %}Non{% endif %}</td></tr>
+    <tr><th>Personne responsable</th><td>{{ compliance.responsible_person|default:"-" }}</td></tr>
+    <tr><th>Derniere revision</th><td>{{ compliance.last_review_date|date:"d/m/Y"|default:"-" }}</td></tr>
+    <tr><th>Prochaine revision</th><td>{{ compliance.next_review_date|date:"d/m/Y"|default:"-" }}</td></tr>
+</table>
+{% if compliance.notes %}<p class="text-muted small mt-3">{{ compliance.notes }}</p>{% endif %}
+</div></div>
+{% endblock %}

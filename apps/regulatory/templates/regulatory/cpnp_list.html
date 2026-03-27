@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Notifications CPNP{% endblock %}
+{% block page_title %}Notifications CPNP{% endblock %}
+{% block content %}
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>N CPNP</th><th>Produit</th><th>Statut</th><th>Marche</th><th>Soumission</th><th>Acceptation</th></tr></thead>
+    <tbody>
+    {% for n in notifications %}
+    <tr><td class="fw-semibold">{{ n.notification_number }}</td><td>{{ n.product.name }}</td>
+    <td><span class="badge badge-status-{{ n.status }}">{{ n.get_status_display }}</span></td>
+    <td>{{ n.market }}</td>
+    <td class="text-muted small">{{ n.submission_date|date:"d/m/Y"|default:"-" }}</td>
+    <td class="text-muted small">{{ n.acceptance_date|date:"d/m/Y"|default:"-" }}</td></tr>
+    {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">Aucune notification CPNP.</td></tr>{% endfor %}
+    </tbody>
+</table>
+</div></div>
+{% endblock %}

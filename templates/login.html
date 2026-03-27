@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion | CosmoERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e1b4b 0%, #7c3aed 100%);
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .brand-logo {
+            width: 64px; height: 64px;
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.75rem; color: white;
+            margin: 0 auto 1rem;
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+            border: none; color: white;
+            padding: 0.75rem;
+            font-weight: 600;
+            width: 100%;
+            border-radius: 8px;
+        }
+        .btn-login:hover { opacity: 0.9; color: white; }
+        .form-control:focus { border-color: #7c3aed; box-shadow: 0 0 0 0.25rem rgba(124,58,237,0.15); }
+        .demo-accounts { background: #f8f7ff; border-radius: 8px; padding: 1rem; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="brand-logo"><i class="fas fa-flask"></i></div>
+        <h4 class="text-center fw-bold mb-1">CosmoERP</h4>
+        <p class="text-center text-muted small mb-4">Cosmétique Manufacturing ERP</p>
+
+        {% if form.errors %}
+        <div class="alert alert-danger py-2">Identifiants incorrects. Réessayez.</div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Nom d'utilisateur</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    <input type="text" name="username" class="form-control" placeholder="username" required autofocus>
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Mot de passe</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                    <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-login">
+                <i class="fas fa-sign-in-alt me-2"></i>Se connecter
+            </button>
+        </form>
+
+        <div class="demo-accounts mt-4">
+            <strong>Comptes de démo:</strong><br>
+            <span class="text-muted">admin / admin123 (superadmin)</span><br>
+            <span class="text-muted">scientist1 / cosmo2024</span><br>
+            <span class="text-muted">lab_manager1 / cosmo2024</span><br>
+            <span class="text-muted">operator1 / cosmo2024</span>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

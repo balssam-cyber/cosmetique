@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Contrôle Qualité (Quarantaine){% endblock %}
+{% block page_title %}Laboratoire : Contrôle Qualité <i class="fas fa-vial text-brand ms-2"></i>{% endblock %}
+
+{% block content %}
+<div class="card mb-4 border-0 shadow-sm border-top border-brand border-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Lots en attente d'approbation (Quarantaine)</h5>
+            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="fas fa-lock me-1"></i> {{ lots|length }} Lots bloqués</span>
+        </div>
+        <p class="text-muted small">Les lots ci-dessous ne peuvent ni être expédiés aux clients ni être utilisés en production tant qu'ils n'ont pas été approuvés par le service qualité.</p>
+        
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>N° Lot / QR</th>
+                        <th>Matière / Produit</th>
+                        <th>Date Production</th>
+                        <th>Quantité</th>
+                        <th class="text-center">Action Laboratoire</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lot in lots %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="data:image/png;base64,{{ lot.get_qr_code_base64 }}" alt="QR" width="40" height="40" class="rounded border p-1 bg-white">
+                                <strong>{{ lot.lot_number }}</strong>
+                            </div>
+                        </td>
+                        <td>{{ lot.material.name }} <br><small class="text-muted">{{ lot.material.code }}</small></td>
+                        <td>{{ lot.production_date|date:"d/m/Y" }}</td>
+                        <td>{{ lot.current_quantity|floatformat:2 }} {{ lot.material.unit }}</td>
+                        <td class="text-center">
+                            <form method="POST" action="{% url 'stock:lot_qc_update' lot.pk %}" class="d-inline-flex gap-2">
+                                {% csrf_token %}
+                                <button type="submit" name="action" value="approve" class="btn btn-sm btn-success" title="Approuver (Conforme)">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger" title="Rejeter (Non Conforme)" onclick="return confirm('Attention ! Le lot sera bloqué définitivement en statut Rejeté. Continuer ?');">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            <i class="fas fa-check-circle fa-2x mb-2 text-success"></i><br>
+                            Aucun lot en quarantaine. Tous les lots sont contrôlés.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

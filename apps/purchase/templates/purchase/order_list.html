@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Bons de commande{% endblock %}
+{% block page_title %}Bons de commande{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <form class="d-flex gap-2" method="get">
+        <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="N de commande..." style="width:200px">
+        <select name="status" class="form-select form-select-sm" style="width:160px">
+            <option value="">Tous statuts</option>
+            {% for val, label in status_choices %}<option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn btn-sm btn-secondary">Filtrer</button>
+    </form>
+    <a href="{% url 'purchase:order_add' %}" class="btn btn-sm btn-brand"><i class="fas fa-plus me-1"></i>Nouvelle commande</a>
+</div>
+<div class="card"><div class="card-body p-0">
+<table class="table table-hover mb-0">
+    <thead><tr><th>N Commande</th><th>Fournisseur</th><th>Date</th><th>Livraison prevue</th><th>Statut</th><th>Montant</th><th></th></tr></thead>
+    <tbody>
+    {% for o in orders %}
+    <tr>
+        <td><a href="{% url 'purchase:order_detail' o.pk %}" class="fw-semibold">BC-{{ o.order_number }}</a></td>
+        <td>{{ o.supplier.name }}</td>
+        <td class="text-muted small">{{ o.order_date|date:"d/m/Y" }}</td>
+        <td class="text-muted small">{{ o.expected_delivery|date:"d/m/Y"|default:"-" }}</td>
+        <td><span class="badge badge-status-{{ o.status }}">{{ o.get_status_display }}</span></td>
+        <td>{{ o.total_amount|floatformat:2 }} EUR</td>
+        <td><a href="{% url 'purchase:order_detail' o.pk %}" class="btn btn-sm btn-outline-secondary py-0 px-2">Voir</a></td>
+    </tr>
+    {% empty %}<tr><td colspan="7" class="text-center text-muted py-4">Aucune commande.</td></tr>{% endfor %}
+    </tbody>
+</table>
+</div></div>
+{% endblock %}

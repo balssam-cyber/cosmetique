@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% block title %}Ajouter ingrédient{% endblock %}
+{% block page_title %}Ajouter un ingrédient — {{ formulation }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-12 col-lg-7">
+
+<!-- Current status -->
+<div class="card mb-3 {% if current_total == 100 %}border-success{% elif current_total > 100 %}border-danger{% else %}border-warning{% endif %}">
+    <div class="card-body py-2 d-flex justify-content-between align-items-center">
+        <span class="text-muted">Total actuel de la formulation :</span>
+        <span class="fw-bold fs-5 {% if current_total == 100 %}text-success{% elif current_total > 100 %}text-danger{% else %}text-warning{% endif %}">
+            {{ current_total|floatformat:2 }}% / 100%
+        </span>
+        <span class="text-muted">Reste à compléter : <strong class="{% if remaining_pct <= 0 %}text-danger{% else %}text-success{% endif %}">{{ remaining_pct|floatformat:2 }}%</strong></span>
+    </div>
+</div>
+
+<!-- Légende compatibilité -->
+{% if compatibility_map %}
+<div class="d-flex gap-3 mb-2 small">
+    <span><span style="color:#4ade80">●</span> Compatible</span>
+    <span><span style="color:#c9a84c">●</span> Précaution</span>
+    <span><span style="color:#f87171">●</span> Incompatible</span>
+    <span><span style="color:#9ca3af">●</span> Non défini</span>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header fw-bold">
+        <i class="fas fa-plus-circle me-2 text-success"></i>Nouvel ingrédient dans la formulation
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Ingrédient *</label>
+                    <select name="ingredient" class="form-select" required id="ingredientSelect">
+                        <option value="">— Sélectionner un ingrédient —</option>
+                        {% for ing in available_ingredients %}
+                        <option value="{{ ing.pk }}"
+                            data-max="{{ ing.max_concentration|default:'' }}"
+                            data-restricted="{{ ing.is_restricted|yesno:'true,false' }}"
+                            data-compat="{% if compatibility_map %}{{ compatibility_map|default:'' }}{% endif %}"
+                            data-compat-status="{{ ing.pk }}">
+                            {% if compatibility_map %}
+                                {% with status=compatibility_map|default:'' %}
+                                {% endwith %}
+                            {% endif %}
+                            {{ ing.name }}{% if ing.inci_name %} ({{ ing.inci_name }}){% endif %}
+                            {% if ing.is_restricted %} ⚠{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div id="ingredientInfo" class="form-text mt-1" style="display:none"></div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Pourcentage (%) *</label>
+                    <div class="input-group">
+                        <input type="number" name="percentage" id="pctInput" class="form-control"
+                               step="0.0001" min="0.0001" max="100"
+                               placeholder="Ex: 5.0" required>
+                        <span class="input-group-text">%</span>
+                    </div>
+                    <div class="form-text">
+                        Quantité pour {{ formulation.batch_size }} kg : <strong id="qtyCalc">—</strong>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Phase</label>
+                    <select name="phase" class="form-select">
+                        {% for val, label in phase_choices %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Fonction</label>
+                    <input type="text" name="function" class="form-control" placeholder="Ex: Humectant">
+                </div>
+
+                <div class="col-12 d-flex gap-2 pt-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-plus me-1"></i>Ajouter à la formulation
+                    </button>
+                    <a href="{% url 'rnd:formulation_detail' formulation.pk %}" class="btn btn-outline-secondary">
+                        Annuler
+                    </a>
+                    <a href="{% url 'rnd:ingredient_add' %}" class="btn btn-outline-primary ms-auto" target="_blank">
+                        <i class="fas fa-plus me-1"></i>Créer un nouvel ingrédient
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Already added ingredients -->
+{% with existing=formulation.formulation_ingredients.all %}
+{% if existing %}
+<div class="card mt-3">
+    <div class="card-header fw-bold text-muted small">
+        Ingrédients déjà dans la formulation ({{ existing|length }})
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+            <thead><tr><th>Phase</th><th>Ingrédient</th><th class="text-end">%</th><th class="text-end">Kg</th></tr></thead>
+            <tbody>
+            {% for fi in existing %}
+            <tr>
+                <td><span class="badge bg-secondary small">{{ fi.phase }}</span></td>
+                <td class="small">{{ fi.ingredient.name }}</td>
+                <td class="text-end fw-semibold">{{ fi.percentage }}%</td>
+                <td class="text-end text-primary small">
+                    {% widthratio fi.percentage 100 formulation.batch_size %} kg
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endwith %}
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const batchSize = {{ formulation.batch_size }};
+// ── Build compat map via JSON ──
+const compatData = JSON.parse('{{ compatibility_map_json|escapejs|default:"{}" }}');
+
+// ── Color options based on compatibility ──
+function colorOptions() {
+    const select = document.getElementById('ingredientSelect');
+    Array.from(select.options).forEach(opt => {
+        if (!opt.value) return;
+        const pk = parseInt(opt.value);
+        const status = compatData[pk];
+        if (status === 'incompatible') {
+            opt.style.color = '#f87171';
+            opt.text = '🔴 ' + opt.text.replace(/^[🟢🟡🔴⚪] /, '');
+        } else if (status === 'caution') {
+            opt.style.color = '#c9a84c';
+            opt.text = '🟡 ' + opt.text.replace(/^[🟢🟡🔴⚪] /, '');
+        } else if (status === 'compatible') {
+            opt.style.color = '#4ade80';
+            opt.text = '🟢 ' + opt.text.replace(/^[🟢🟡🔴⚪] /, '');
+        }
+    });
+}
+
+colorOptions();
+
+// ── Calcul quantité ──
+document.getElementById('pctInput').addEventListener('input', function() {
+    const pct = parseFloat(this.value) || 0;
+    const qty = (pct / 100 * batchSize).toFixed(4);
+    document.getElementById('qtyCalc').textContent = qty + ' kg';
+});
+
+// ── Info ingrédient sélectionné ──
+document.getElementById('ingredientSelect').addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const maxConc = opt.dataset.max;
+    const isRestricted = opt.dataset.restricted === 'true';
+    const pk = parseInt(opt.value);
+    const compatStatus = compatData[pk];
+    const infoDiv = document.getElementById('ingredientInfo');
+
+    let msgs = [];
+    let cssClass = 'form-text mt-1 text-info';
+
+    if (maxConc) msgs.push(`Concentration max : ${maxConc}%`);
+    if (isRestricted) {
+        msgs.push('⚠ Ingrédient restreint — vérifier la réglementation');
+        cssClass = 'form-text mt-1 text-danger';
+    }
+    if (compatStatus === 'incompatible') {
+        msgs.push('❌ Incompatible avec un ou plusieurs ingrédients déjà dans la formulation');
+        cssClass = 'form-text mt-1 text-danger';
+    } else if (compatStatus === 'caution') {
+        msgs.push('⚠ Précaution avec un ou plusieurs ingrédients déjà dans la formulation');
+        cssClass = 'form-text mt-1 text-warning';
+    } else if (compatStatus === 'compatible') {
+        msgs.push('✅ Compatible avec tous les ingrédients de la formulation');
+        cssClass = 'form-text mt-1 text-success';
+    }
+
+    if (msgs.length > 0) {
+        infoDiv.innerHTML = msgs.join('<br>');
+        infoDiv.className = cssClass;
+        infoDiv.style.display = 'block';
+        if (maxConc) document.getElementById('pctInput').max = maxConc;
+    } else {
+        infoDiv.style.display = 'none';
+        document.getElementById('pctInput').max = 100;
+    }
+});
+</script>
+{% endblock %}

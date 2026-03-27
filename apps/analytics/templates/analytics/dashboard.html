@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block title %}Analytics & Data Science{% endblock %}
+{% block page_title %}Tableau de Bord Data Science <i class="fas fa-chart-line text-brand ms-2"></i>{% endblock %}
+
+{% block content %}
+<!-- Inclusion de Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- KPIs Financiers -->
+<div class="row g-4 mb-4">
+    <!-- Chiffre d'Affaires -->
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm border-bottom border-success border-4 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="text-muted fw-bold mb-0">Chiffre d'Affaires (Global)</h6>
+                    <div class="bg-success bg-opacity-10 text-success p-2 rounded"><i class="fas fa-money-bill-wave fa-lg"></i></div>
+                </div>
+                <h3 class="fw-bold mb-1">{{ total_revenue|floatformat:2 }} <span class="fs-6 text-muted">DT</span></h3>
+                <small class="text-success fw-semibold"><i class="fas fa-arrow-up me-1"></i>Ventes Confirmées</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Achats & Dépesnes -->
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm border-bottom border-danger border-4 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="text-muted fw-bold mb-0">Dépenses (Achats MP/AC)</h6>
+                    <div class="bg-danger bg-opacity-10 text-danger p-2 rounded"><i class="fas fa-shopping-cart fa-lg"></i></div>
+                </div>
+                <h3 class="fw-bold mb-1">{{ total_purchases|floatformat:2 }} <span class="fs-6 text-muted">DT</span></h3>
+                <small class="text-danger fw-semibold"><i class="fas fa-arrow-down me-1"></i>Matières réceptionnées</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bénéfice Brut -->
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm border-bottom border-brand border-4 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="text-muted fw-bold mb-0">Bénéfice Brut Estimmé</h6>
+                    <div class="bg-brand bg-opacity-10 text-brand p-2 rounded"><i class="fas fa-chart-pie fa-lg"></i></div>
+                </div>
+                <h3 class="fw-bold mb-1 {% if gross_profit > 0 %}text-brand{% else %}text-danger{% endif %}">
+                    {{ gross_profit|floatformat:2 }} <span class="fs-6 text-muted">DT</span>
+                </h3>
+                <small class="text-muted fw-semibold">Différence (Revenus - Achats)</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphiques -->
+<div class="row g-4">
+    <!-- Ligne: CA vs Dépenses -->
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 pt-4 pb-0">
+                <h6 class="fw-bold"><i class="fas fa-chart-area me-2 text-secondary"></i>Évolution Financière (6 derniers mois)</h6>
+            </div>
+            <div class="card-body pt-2 pb-4 px-4">
+                <canvas id="financialChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Doughnut: Top Produits -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 pt-4 pb-0">
+                <h6 class="fw-bold"><i class="fas fa-trophy me-2 text-warning"></i>Top 5 Produits Vendus (Qté)</h6>
+            </div>
+            <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                <canvas id="productsChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // 1. Chart Évolution Financière (Line)
+    const financialCtx = document.getElementById('financialChart').getContext('2d');
+    new Chart(financialCtx, {
+        type: 'line',
+        data: {
+            labels: JSON.parse('{{ chart_labels|safe }}'),
+            datasets: [
+                {
+                    label: "Revenus (Ventes)",
+                    data: JSON.parse('{{ revenue_series|safe }}'),
+                    borderColor: '#10b981', // green
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: "Dépenses (Achats)",
+                    data: JSON.parse('{{ purchases_series|safe }}'),
+                    borderColor: '#ef4444', // red
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    borderDash: [5, 5],
+                    tension: 0.4,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            interaction: { mode: 'nearest', axis: 'x', intersect: false },
+            scales: {
+                y: { beginAtZero: true, grid: { borderDash: [2, 4] } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 2. Chart Top Produits (Doughnut)
+    const productsCtx = document.getElementById('productsChart').getContext('2d');
+    new Chart(productsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: JSON.parse('{{ prod_labels|safe }}'),
+            datasets: [{
+                data: JSON.parse('{{ prod_data|safe }}'),
+                backgroundColor: [
+                    '#4f46e5', // Indigo (brand)
+                    '#0ea5e9', // Sky blue
+                    '#10b981', // Emerald
+                    '#f59e0b', // Amber
+                    '#8b5cf6'  // Violet
+                ],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

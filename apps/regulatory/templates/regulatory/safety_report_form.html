@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Rapport RSP{% endblock %}
+{% block page_title %}{% if report %}Editer RSP{% else %}Nouveau rapport RSP{% endif %}{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-12 col-lg-7">
+<div class="card"><div class="card-body">
+<form method="post">{% csrf_token %}
+<div class="row g-3">
+    <div class="col-md-6"><label class="form-label">N Rapport *</label><input type="text" name="report_number" class="form-control" value="{{ report.report_number|default:'' }}" required></div>
+    <div class="col-md-6"><label class="form-label">Statut</label>
+        <select name="status" class="form-select">{% for val, label in status_choices %}<option value="{{ val }}" {% if report.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    </div>
+    <div class="col-md-6"><label class="form-label">Produit *</label>
+        <select name="product" class="form-select" required>{% for p in products %}<option value="{{ p.pk }}" {% if report.product_id == p.pk %}selected{% endif %}>{{ p.name }}</option>{% endfor %}</select>
+    </div>
+    <div class="col-md-6"><label class="form-label">Formulation</label>
+        <select name="formulation" class="form-select"><option value="">-</option>{% for f in formulations %}<option value="{{ f.pk }}" {% if report.formulation_id == f.pk %}selected{% endif %}>{{ f }}</option>{% endfor %}</select>
+    </div>
+    <div class="col-md-12"><label class="form-label">Evaluateur securite *</label><input type="text" name="safety_assessor" class="form-control" value="{{ report.safety_assessor|default:'' }}" required></div>
+    <div class="col-md-4"><label class="form-label">Date emission</label><input type="date" name="issue_date" class="form-control" value="{{ report.issue_date|date:'Y-m-d'|default:'' }}"></div>
+    <div class="col-md-4"><label class="form-label">Date expiration</label><input type="date" name="expiry_date" class="form-control" value="{{ report.expiry_date|date:'Y-m-d'|default:'' }}"></div>
+    <div class="col-12"><label class="form-label">Conclusion</label><textarea name="conclusion" class="form-control" rows="4">{{ report.conclusion|default:'' }}</textarea></div>
+    <div class="col-12 d-flex gap-2"><button type="submit" class="btn btn-brand">Enregistrer</button><a href="{% url 'regulatory:safety_report_list' %}" class="btn btn-outline-secondary">Annuler</a></div>
+</div>
+</form></div></div>
+</div></div>
+{% endblock %}

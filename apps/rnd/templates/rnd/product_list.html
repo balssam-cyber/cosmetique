@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Produits R&D{% endblock %}
+{% block page_title %}Produits R&D{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <form class="d-flex gap-2" method="get">
+        <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Rechercher..." style="width:200px">
+        <select name="status" class="form-select form-select-sm" style="width:150px">
+            <option value="">Tous statuts</option>
+            {% for val, label in status_choices %}<option value="{{ val }}" {% if status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="btn btn-sm btn-secondary">Filtrer</button>
+    </form>
+    {% if can_edit %}
+    <a href="{% url 'rnd:product_add' %}" class="btn btn-sm btn-brand"><i class="fas fa-plus me-1"></i>Nouveau produit</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr><th>Référence</th><th>Nom</th><th>Catégorie</th><th>Statut</th><th>Formulations</th><th>Créé le</th><th></th></tr>
+            </thead>
+            <tbody>
+            {% for product in products %}
+            <tr>
+                <td class="fw-semibold">{{ product.reference }}</td>
+                <td><a href="{% url 'rnd:product_detail' product.pk %}" class="text-decoration-none">{{ product.name }}</a></td>
+                <td class="text-muted small">{{ product.get_category_display }}</td>
+                <td><span class="badge badge-status-{{ product.status }}">{{ product.get_status_display }}</span></td>
+                <td class="text-muted">{{ product.formulations.count }}</td>
+                <td class="text-muted small">{{ product.created_at|date:"d/m/Y" }}</td>
+                <td>
+                    {% if can_edit %}
+                    <a href="{% url 'rnd:product_edit' product.pk %}" class="btn btn-xs btn-sm btn-outline-secondary py-0 px-2">Éditer</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-4">Aucun produit trouvé.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

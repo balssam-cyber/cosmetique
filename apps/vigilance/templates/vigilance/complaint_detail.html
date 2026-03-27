@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}{{ complaint.reference }} - Plaintes{% endblock %}
+{% block page_title %}Détail de la Plainte : {{ complaint.reference }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{% url 'vigilance:complaint_list' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Retour</a>
+    <a href="{% url 'vigilance:complaint_edit' complaint.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit me-1"></i>Modifier</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-bold"><i class="fas fa-info-circle me-1"></i>Informations Générales</div>
+            <div class="card-body">
+                <table class="table table-borderless table-sm">
+                    <tr><th>Statut:</th><td>
+                        {% if complaint.status == 'open' %}<span class="badge badge-status-pending">Ouvert</span>
+                        {% elif complaint.status == 'investigating' %}<span class="badge bg-info text-dark">Investigation</span>
+                        {% else %}<span class="badge badge-status-delivered">Clôturé</span>{% endif %}
+                    </td></tr>
+                    <tr><th>Gravité:</th><td>
+                        {% if complaint.severity == 'high' %}<span class="badge bg-danger">Critique</span>
+                        {% elif complaint.severity == 'medium' %}<span class="badge bg-warning text-dark">Moyenne</span>
+                        {% else %}<span class="badge bg-secondary">Faible</span>{% endif %}
+                    </td></tr>
+                    <tr><th>Date de déclaration:</th><td>{{ complaint.date_received|date:"d/m/Y" }}</td></tr>
+                    <tr><th>Enregistré par:</th><td>{{ complaint.recorded_by|default:"-" }}</td></tr>
+                    <tr><th>Client:</th><td class="fw-bold"><a href="{% url 'sales:customer_detail' complaint.customer.pk %}">{{ complaint.customer.name }}</a></td></tr>
+                    <tr><th>Lot impliqué:</th><td>
+                        {% if complaint.lot %}
+                            <a href="{% url 'stock:lot_detail' complaint.lot.pk %}">{{ complaint.lot.lot_number }}</a>
+                            <br><small class="text-muted">{{ complaint.lot.material.name }}</small>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header fw-bold text-danger"><i class="fas fa-exclamation-triangle me-1"></i>Description des symptômes</div>
+            <div class="card-body">
+                {{ complaint.description|linebreaks }}
+            </div>
+        </div>
+        
+        <div class="card shadow-sm border-success">
+            <div class="card-header fw-bold text-success"><i class="fas fa-tools me-1"></i>Actions Correctives (CAPA)</div>
+            <div class="card-body">
+                {% if complaint.action_taken %}
+                    {{ complaint.action_taken|linebreaks }}
+                {% else %}
+                    <span class="text-muted fst-italic">Aucune action corrective enregistrée pour le moment.</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

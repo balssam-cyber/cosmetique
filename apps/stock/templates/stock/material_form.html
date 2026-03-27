@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}{% if material %}Éditer matière{% else %}Nouvelle matière{% endif %}{% endblock %}
+{% block page_title %}{% if material %}Éditer — {{ material.name }}{% else %}Nouvelle matière / produit{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-12 col-lg-7">
+<div class="card">
+    <div class="card-header fw-bold">
+        <i class="fas fa-boxes me-2 text-primary"></i>
+        {% if material %}Modifier la matière{% else %}Créer une nouvelle matière{% endif %}
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Code *</label>
+                    <input type="text" name="code" class="form-control" value="{{ material.code|default:'' }}"
+                           placeholder="Ex: MP001" required>
+                    <div class="form-text">Code unique de référence</div>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold">Nom *</label>
+                    <input type="text" name="name" class="form-control" value="{{ material.name|default:'' }}"
+                           placeholder="Ex: Glycérine végétale" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Type *</label>
+                    <select name="material_type" class="form-select" required>
+                        {% for val, label in type_choices %}
+                        <option value="{{ val }}" {% if material.material_type == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Unité *</label>
+                    <select name="unit" class="form-select" required>
+                        {% for val, label in unit_choices %}
+                        <option value="{{ val }}" {% if material.unit == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Catégorie</label>
+                    <select name="category" class="form-select">
+                        <option value="">— Aucune —</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.pk }}" {% if material.category_id == cat.pk %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Stock minimum</label>
+                    <div class="input-group">
+                        <input type="number" name="minimum_stock" class="form-control"
+                               step="0.01" min="0" value="{{ material.minimum_stock|default:0 }}">
+                        <span class="input-group-text">{{ material.unit|default:"unité" }}</span>
+                    </div>
+                    <div class="form-text">Seuil d'alerte stock faible</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Quantité de réapprovisionnement</label>
+                    <div class="input-group">
+                        <input type="number" name="reorder_quantity" class="form-control"
+                               step="0.01" min="0" value="{{ material.reorder_quantity|default:0 }}">
+                        <span class="input-group-text">{{ material.unit|default:"unité" }}</span>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Description</label>
+                    <textarea name="description" class="form-control" rows="2"
+                              placeholder="Description optionnelle...">{{ material.description|default:'' }}</textarea>
+                </div>
+
+                <!-- Lien Ingrédient R&D -->
+                {% if ingredients %}
+                <div class="col-12">
+                    <hr class="my-1">
+                    <label class="form-label fw-semibold">
+                        <i class="fas fa-flask me-1 text-primary"></i>
+                        Lier à un ingrédient R&D
+                    </label>
+                    <select name="ingredient" class="form-select">
+                        <option value="">— Aucun lien —</option>
+                        {% for ing in ingredients %}
+                        <option value="{{ ing.pk }}"
+                            {% if material.ingredient_id == ing.pk %}selected{% endif %}>
+                            {{ ing.name }} {% if ing.inci_name %}({{ ing.inci_name }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text text-primary">
+                        <i class="fas fa-info-circle me-1"></i>
+                        En liant cette matière à un ingrédient R&D, la production calculera automatiquement
+                        la quantité nécessaire depuis la formulation.
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="col-12 d-flex gap-2 pt-2">
+                    <button type="submit" class="btn btn-brand">
+                        <i class="fas fa-save me-1"></i>Enregistrer
+                    </button>
+                    <a href="{% if material %}{% url 'stock:material_detail' material.pk %}{% else %}{% url 'stock:material_list' %}{% endif %}"
+                       class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}

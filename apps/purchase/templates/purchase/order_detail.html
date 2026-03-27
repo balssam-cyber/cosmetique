@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% block title %}Commande {{ order.order_number }}{% endblock %}
+{% block page_title %}BC-{{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Détails de la commande</h5>
+          <div class="d-flex gap-2">
+            {% if order.status != 'cancelled' %}
+            <a href="{% url 'purchase:order_edit' order.pk %}" class="btn btn-sm btn-outline-primary">
+              <i class="fas fa-edit me-1"></i>Modifier
+            </a>
+            <a href="{% url 'purchase:quick_receive' order.pk %}" class="btn btn-sm btn-success">
+              <i class="fas fa-truck me-1"></i>Réceptionner
+            </a>
+            {% endif %}
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <small class="text-muted">N° Commande</small>
+              <div class="fw-bold">BC-{{ order.order_number }}</div>
+            </div>
+            <div class="col-md-4">
+              <small class="text-muted">Fournisseur</small>
+              <div class="fw-bold">{{ order.supplier.name }}</div>
+            </div>
+            <div class="col-md-4">
+              <small class="text-muted">Statut</small>
+              <div>
+                <span class="badge
+                  {% if order.status == 'draft' %}bg-secondary
+                  {% elif order.status == 'sent' %}bg-info
+                  {% elif order.status == 'confirmed' %}bg-primary
+                  {% elif order.status == 'partially_received' %}bg-warning
+                  {% elif order.status == 'received' %}bg-success
+                  {% else %}bg-danger{% endif %}">
+                  {{ order.get_status_display }}
+                </span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <small class="text-muted">Date commande</small>
+              <div>{{ order.order_date|date:"d/m/Y" }}</div>
+            </div>
+            <div class="col-md-4">
+              <small class="text-muted">Livraison prévue</small>
+              <div>{{ order.expected_delivery|date:"d/m/Y"|default:"—" }}</div>
+            </div>
+            <div class="col-md-4">
+              <small class="text-muted">Devise</small>
+              <div>{{ order.currency }} — Taux : {{ order.exchange_rate }}</div>
+            </div>
+            <div class="col-md-4">
+              <small class="text-muted">Créé par</small>
+              <div>{{ order.created_by.get_full_name|default:order.created_by.username }}</div>
+            </div>
+            {% if order.notes %}
+            <div class="col-12">
+              <small class="text-muted">Notes</small>
+              <div>{{ order.notes }}</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body d-flex flex-column justify-content-center align-items-center">
+          <small class="text-muted mb-1">Total commande</small>
+          <div class="fw-bold fs-2" style="color:#c9a84c">
+            {{ order.total_amount|floatformat:2 }} {{ order.currency }}
+          </div>
+          {% if order.currency != 'TND' %}
+          <div class="text-success fw-bold fs-5">
+            {{ order.total_amount_tnd|floatformat:2 }} TND
+          </div>
+          {% endif %}
+          <small class="text-muted mt-2">{{ order.lines.count }} ligne(s)</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Lignes de commande ── -->
+  <div class="card mb-4">
+    <div class="card-header"><h6 class="mb-0">Lignes de commande</h6></div>
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Matière</th>
+            <th>Unité</th>
+            <th class="text-end">Quantité</th>
+            <th class="text-end">Prix unitaire</th>
+            <th class="text-end">Qté reçue</th>
+            <th class="text-end">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for line in order.lines.all %}
+          <tr>
+            <td class="fw-semibold">{{ line.material.name }}</td>
+            <td>{{ line.material.unit }}</td>
+            <td class="text-end">{{ line.quantity }}</td>
+            <td class="text-end">{{ line.unit_price }} {{ order.currency }}</td>
+            <td class="text-end">
+              {% if line.received_quantity > 0 %}
+                <span class="text-success fw-bold">{{ line.received_quantity }}</span>
+                {% if line.received_quantity < line.quantity %}
+                <span class="badge bg-warning ms-1">Incomplet</span>
+                {% endif %}
+              {% else %}
+                <span class="text-muted">0</span>
+              {% endif %}
+            </td>
+            <td class="text-end fw-bold">{{ line.total_price|floatformat:2 }} {{ order.currency }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-3">Aucune ligne</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Manques stock ── -->
+  {% if order.shortages.exists %}
+  <div class="card mb-4 border-warning">
+    <div class="card-header" style="border-color:rgba(201,168,76,0.4)">
+      <h6 class="mb-0"><i class="fas fa-exclamation-triangle me-2" style="color:#c9a84c"></i>Manques signalés</h6>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Matière</th>
+            <th class="text-end">Attendu</th>
+            <th class="text-end">Reçu</th>
+            <th>Note</th>
+            <th>Statut</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for shortage in order.shortages.all %}
+          <tr class="{% if shortage.is_resolved %}opacity-50{% endif %}">
+            <td class="fw-semibold">{{ shortage.material_name }}</td>
+            <td class="text-end">{{ shortage.expected_quantity }}</td>
+            <td class="text-end text-warning">{{ shortage.received_quantity }}</td>
+            <td class="text-muted small">{{ shortage.note|default:"—" }}</td>
+            <td>
+              {% if shortage.is_resolved %}
+              <span class="badge bg-success">Résolu</span>
+              {% else %}
+              <span class="badge bg-warning">En attente</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if not shortage.is_resolved %}
+              <a href="{% url 'purchase:resolve_shortage' shortage.pk %}"
+                 class="btn btn-xs btn-sm btn-outline-success py-0 px-2"
+                 onclick="return confirm('Marquer comme résolu ?')">
+                <i class="fas fa-check"></i>
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Bons de réception ── -->
+  {% if receipts %}
+  <div class="card mb-4">
+    <div class="card-header"><h6 class="mb-0">Bons de réception</h6></div>
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>N° Réception</th>
+            <th>Date</th>
+            <th>Référence BL</th>
+            <th>Reçu par</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for receipt in receipts %}
+          <tr>
+            <td>BR-{{ receipt.id }}</td>
+            <td>{{ receipt.receipt_date|date:"d/m/Y" }}</td>
+            <td>{{ receipt.reference|default:"—" }}</td>
+            <td>{{ receipt.received_by.get_full_name|default:receipt.received_by.username }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="mt-3">
+    <a href="{% url 'purchase:order_list' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left me-1"></i>Retour à la liste
+    </a>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}Lot {{ lot.lot_number }}{% endblock %}
+{% block page_title %}Lot — {{ lot.lot_number }}{% endblock %}
+
+{% block content %}
+<div class="d-flex gap-2 mb-3">
+    <a href="{% url 'stock:lot_list' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Retour aux lots
+    </a>
+    <a href="{% url 'stock:material_detail' lot.material.pk %}" class="btn btn-sm btn-outline-primary">
+        <i class="fas fa-boxes me-1"></i>Voir la matière
+    </a>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-5">
+        <div class="card {% if lot.is_expired %}border-danger{% elif lot.is_expiring_soon %}border-warning{% endif %}">
+            <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-barcode me-2"></i>Informations du lot</span>
+                {% if lot.qc_status == 'quarantine' %}<span class="badge bg-warning text-dark"><i class="fas fa-lock me-1"></i>En Quarantaine</span>
+                {% elif lot.qc_status == 'approved' %}<span class="badge bg-success"><i class="fas fa-check me-1"></i>Approuvé</span>
+                {% else %}<span class="badge bg-danger"><i class="fas fa-times me-1"></i>Rejeté</span>{% endif %}
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <img src="data:image/png;base64,{{ lot.get_qr_code_base64 }}" alt="QR Code" class="img-fluid border rounded p-2 bg-white" style="max-width: 150px;">
+                    <div class="mt-2 text-muted fw-bold font-monospace">{{ lot.lot_number }}</div>
+                </div>
+                <table class="table table-sm table-borderless mb-0">
+                    <tr><th width="45%">Matière</th><td class="fw-semibold">{{ lot.material.name }}</td></tr>
+                    <tr><th>Code matière</th><td><code>{{ lot.material.code }}</code></td></tr>
+                    <tr><th>Qté initiale</th><td>{{ lot.initial_quantity|floatformat:2 }} {{ lot.material.unit }}</td></tr>
+                    <tr><th>Qté actuelle</th>
+                        <td class="fw-bold fs-5 {% if lot.current_quantity <= 0 %}text-danger{% else %}text-success{% endif %}">
+                            {{ lot.current_quantity|floatformat:2 }} {{ lot.material.unit }}
+                        </td>
+                    </tr>
+                    <tr><th>Date réception/prod</th><td>{{ lot.reception_date|date:"d/m/Y" }}</td></tr>
+                    <tr><th>Fournisseur</th><td>{{ lot.supplier|default:"-" }}</td></tr>
+                    <tr><th>Emplacement</th><td>{{ lot.location|default:"-" }}</td></tr>
+                    <tr><th>Date expiration</th>
+                        <td>
+                            {% if lot.expiry_date %}
+                                {% if lot.is_expired %}
+                                    <span class="text-danger fw-bold"><i class="fas fa-ban me-1"></i>{{ lot.expiry_date|date:"d/m/Y" }} — EXPIRÉ</span>
+                                {% elif lot.is_expiring_soon %}
+                                    <span class="text-warning fw-bold"><i class="fas fa-clock me-1"></i>{{ lot.expiry_date|date:"d/m/Y" }} — Bientôt</span>
+                                {% else %}
+                                    {{ lot.expiry_date|date:"d/m/Y" }}
+                                {% endif %}
+                            {% else %}Pas d'expiration{% endif %}
+                        </td>
+                    </tr>
+                </table>
+                {% if lot.notes %}
+                <hr class="my-2">
+                <p class="small text-muted mb-0">{{ lot.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-7">
+        <div class="card">
+            <div class="card-header fw-bold">
+                <i class="fas fa-history me-2 text-secondary"></i>Historique des mouvements
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date & Heure</th>
+                            <th>Type</th>
+                            <th class="text-end">Quantité</th>
+                            <th>Référence</th>
+                            <th>Par</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for mv in movements %}
+                    <tr>
+                        <td class="text-muted small">{{ mv.created_at|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <span class="badge bg-light text-dark border small">{{ mv.get_movement_type_display }}</span>
+                        </td>
+                        <td class="text-end fw-bold {% if mv.quantity < 0 %}text-danger{% else %}text-success{% endif %}">
+                            {% if mv.quantity > 0 %}+{% endif %}{{ mv.quantity }} {{ lot.material.unit }}
+                        </td>
+                        <td class="text-muted small">{{ mv.reference|default:"—" }}</td>
+                        <td class="text-muted small">{{ mv.performed_by|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted py-3">Aucun mouvement.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

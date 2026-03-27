@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}{% if product %}Éditer{% else %}Nouveau{% endif %} Produit{% endblock %}
+{% block page_title %}{% if product %}Éditer {{ product.name }}{% else %}Nouveau Produit R&D{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-12 col-lg-8">
+<div class="card">
+    <div class="card-header">Informations du produit</div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Nom du produit *</label>
+                    <input type="text" name="name" class="form-control" value="{{ product.name|default:'' }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Référence *</label>
+                    <input type="text" name="reference" class="form-control" value="{{ product.reference|default:'' }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Catégorie *</label>
+                    <select name="category" class="form-select" required>
+                        {% for val, label in category_choices %}
+                        <option value="{{ val }}" {% if product.category == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Statut *</label>
+                    <select name="status" class="form-select" required>
+                        {% for val, label in status_choices %}
+                        <option value="{{ val }}" {% if product.status == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-control" rows="3">{{ product.description|default:'' }}</textarea>
+                </div>
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-brand"><i class="fas fa-save me-1"></i>Enregistrer</button>
+                    <a href="{% if product %}{% url 'rnd:product_detail' product.pk %}{% else %}{% url 'rnd:product_list' %}{% endif %}" class="btn btn-outline-secondary">Annuler</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}
